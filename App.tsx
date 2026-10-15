@@ -10,18 +10,21 @@ import {
   Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Calendar, Pill, Activity, ShieldCheck } from 'lucide-react-native';
+import { Calendar, Pill, Activity, ShieldCheck, User } from 'lucide-react-native';
 import { ActiveTab } from './src/types';
 import { StorageService } from './src/services/storage';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { AuthScreen } from './src/screens/AuthScreen';
 import { TodayScreen } from './src/screens/TodayScreen';
 import { CabinetScreen } from './src/screens/CabinetScreen';
 import { VitalsScreen } from './src/screens/VitalsScreen';
 import { CaregiverScreen } from './src/screens/CaregiverScreen';
 import { Colors } from './src/theme/colors';
 
-export default function App() {
+function MainApp() {
+  const { user, isLoading, isDemoMode } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('today');
-  const [isReady, setIsReady] = useState(false);
+  const [isStorageReady, setIsStorageReady] = useState(false);
 
   useEffect(() => {
     async function prepare() {
@@ -30,13 +33,13 @@ export default function App() {
       } catch (e) {
         console.warn('Init error:', e);
       } finally {
-        setIsReady(true);
+        setIsStorageReady(true);
       }
     }
     prepare();
   }, []);
 
-  if (!isReady) {
+  if (isLoading || !isStorageReady) {
     return (
       <View style={styles.splashContainer}>
         <Image
@@ -50,10 +53,41 @@ export default function App() {
     );
   }
 
+  // If not authenticated and not in demo mode, show Auth Screen
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       <View style={styles.container}>
+        {/* Top App Header Banner */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarLeft}>
+            <Image
+              source={require('./assets/logo.png')}
+              style={styles.topLogo}
+              resizeMode="contain"
+            />
+            <View style={{ marginLeft: 8 }}>
+              <Text style={styles.topAppName}>PillGuardian</Text>
+              <Text style={styles.topPatientName}>
+                {user.fullName} {isDemoMode ? '• Demo' : ''}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.syncStatusPill}
+            onPress={() => setActiveTab('caregiver')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.onlineDot} />
+            <Text style={styles.syncStatusText}>Protected</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Active Screen View */}
         <View style={styles.screenContainer}>
           {activeTab === 'today' && (
@@ -151,6 +185,14 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -160,6 +202,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  topBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  topLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+  },
+  topAppName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    lineHeight: 16,
+  },
+  topPatientName: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  syncStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginRight: 6,
+  },
+  syncStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#15803D',
   },
   screenContainer: {
     flex: 1,

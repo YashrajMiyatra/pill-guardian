@@ -18,39 +18,63 @@ import {
   Stethoscope,
   HeartHandshake,
   AlertCircle,
+  Cloud,
+  LogOut,
+  CheckCircle2,
 } from 'lucide-react-native';
 import { UserProfile, CaregiverContact, Medication, VitalLog, DoseItem } from '../types';
 import { StorageService } from '../services/storage';
 import { ReportGeneratorService } from '../services/reportGenerator';
+import { CloudSyncService } from '../services/cloudSync';
+import { useAuth } from '../context/AuthContext';
 import { Colors } from '../theme/colors';
 
 export const CaregiverScreen: React.FC = () => {
+  const { user, signOut, isDemoMode } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [caregiver, setCaregiver] = useState<CaregiverContact | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [vitals, setVitals] = useState<VitalLog[]>([]);
   const [doses, setDoses] = useState<DoseItem[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
-      const [p, c, m, v, d] = await Promise.all([
+      const [p, c, m, v, d, syncTime] = await Promise.all([
         StorageService.getProfile(),
         StorageService.getCaregiver(),
         StorageService.getMedications(),
         StorageService.getVitals(),
         StorageService.getDailyDoses(todayStr),
+        CloudSyncService.getLastSyncTime(),
       ]);
       setProfile(p);
       setCaregiver(c);
       setMedications(m);
       setVitals(v);
       setDoses(d);
+      setLastSyncTime(syncTime);
     } catch (e) {
       console.error('Error loading Caregiver data:', e);
     }
   }, []);
+
+  const handleSyncToCloud = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await CloudSyncService.syncToCloud(medications, vitals);
+      setLastSyncTime(res.lastSync);
+      Alert.alert(
+        res.success ? 'Sync Successful' : 'Sync Status',
+        res.error || 'All medications and vitals have been backed up securely.'
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -238,6 +262,57 @@ export const CaregiverScreen: React.FC = () => {
               <Text style={styles.exportBtnText}>Generate & Share Medical PDF</Text>
             </>
           )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Cloud Sync & Realtime Backup Card */}
+      <View style={styles.syncCard}>
+        <View style={styles.syncTop}>
+          <Cloud size={24} color="#0D9488" />
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <Text style={styles.syncTitle}>Cloud Vault & Caregiver Sync</Text>
+            <Text style={styles.syncSub}>
+              {lastSyncTime
+                ? `Last backed up: ${new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'Local encrypted vault active'}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.syncBtn}
+            onPress={handleSyncToCloud}
+            disabled={isSyncing}
+          >
+            {isSyncing ? (
+              <ActivityIndicator size="small" color="#0D9488" />
+            ) : (
+              <Text style={styles.syncBtnText}>Sync Now</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* User Account & Security Settings */}
+      <View style={styles.accountCard}>
+        <View style={styles.accountHeader}>
+          <UserCheck size={20} color="#0284C7" />
+          <View style={{ marginLeft: 10, flex: 1 }}>
+            <Text style={styles.accountName}>
+              {user?.fullName || profile.fullName}
+            </Text>
+            <Text style={styles.accountEmail}>
+              {user?.email || 'arthur.bennett@example.com'} {isDemoMode ? '(Demo Mode)' : ''}
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={signOut}
+          activeOpacity={0.8}
+        >
+          <LogOut size={16} color="#DC2626" />
+          <Text style={styles.signOutBtnText}>Sign Out of Patient Account</Text>
         </TouchableOpacity>
       </View>
 
@@ -493,5 +568,81 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
     marginLeft: 8,
+  },
+  syncCard: {
+    backgroundColor: '#F0FDFA',
+    borderRadius: 18,
+    padding: 16,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    marginBottom: 14,
+  },
+  syncTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  syncTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F766E',
+  },
+  syncSub: {
+    fontSize: 11,
+    color: '#115E59',
+    marginTop: 2,
+  },
+  syncBtn: {
+    backgroundColor: '#CCFBF1',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#5EEAD4',
+  },
+  syncBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F766E',
+  },
+  accountCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+  accountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  accountName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  accountEmail: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  signOutBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#DC2626',
+    marginLeft: 6,
   },
 });

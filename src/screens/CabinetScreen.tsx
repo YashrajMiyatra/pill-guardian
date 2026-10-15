@@ -9,9 +9,10 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { Plus, Search, Pill, AlertCircle } from 'lucide-react-native';
+import { Plus, Search, Pill, AlertCircle, AlertTriangle, ShieldAlert } from 'lucide-react-native';
 import { Medication } from '../types';
 import { StorageService } from '../services/storage';
+import { InteractionCheckerService, DrugInteractionAlert } from '../services/interactionChecker';
 import { MedicationCard } from '../components/MedicationCard';
 import { AddMedicationModal } from '../components/AddMedicationModal';
 
@@ -80,6 +81,9 @@ export const CabinetScreen: React.FC = () => {
     m => m.isActive && m.stockCurrent <= m.stockRefillAlert
   ).length;
 
+  // Check drug interactions across active medications
+  const interactions = InteractionCheckerService.checkInteractions(medications);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -129,6 +133,43 @@ export const CabinetScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* Drug Interactions Banner */}
+      {interactions.length > 0 && (
+        <View style={styles.interactionContainer}>
+          {interactions.map(item => (
+            <View
+              key={item.id}
+              style={[
+                styles.interactionCard,
+                item.severity === 'critical'
+                  ? styles.interactionCardCritical
+                  : styles.interactionCardModerate,
+              ]}
+            >
+              <View style={styles.interactionHeader}>
+                <ShieldAlert
+                  size={18}
+                  color={item.severity === 'critical' ? '#B91C1C' : '#D97706'}
+                />
+                <Text
+                  style={[
+                    styles.interactionTitle,
+                    { color: item.severity === 'critical' ? '#B91C1C' : '#D97706' },
+                  ]}
+                >
+                  {item.title}
+                </Text>
+              </View>
+
+              <Text style={styles.interactionDescription}>{item.description}</Text>
+              <View style={styles.interactionAdviceBox}>
+                <Text style={styles.interactionAdviceText}>💡 {item.clinicalAdvice}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Medication List */}
       <ScrollView
@@ -273,5 +314,51 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#94A3B8',
     marginTop: 4,
+  },
+  interactionContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  interactionCard: {
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  interactionCardCritical: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  interactionCardModerate: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
+  interactionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  interactionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+  interactionDescription: {
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  interactionAdviceBox: {
+    marginTop: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  interactionAdviceText: {
+    fontSize: 11,
+    color: '#475569',
+    fontWeight: '600',
   },
 });
