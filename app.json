@@ -14,7 +14,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pillguardian.app",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "NSCameraUsageDescription": "PillGuardian requires camera access if you scan prescription barcodes."
       }
     },
@@ -50,8 +52,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "pill-guardian-production"
+        "projectId": "114e8bce-a3ed-46e7-b994-4be2d2ed9cd5"
       }
-    }
+    },
+    "owner": "yashrajmiyatra"
   }
 }
