@@ -37,6 +37,10 @@ import {
   DollarSign,
   Sparkles,
   ClipboardList,
+  Bell,
+  RotateCcw,
+  ThumbsUp,
+  AlertCircle,
 } from 'lucide-react-native';
 import {
   Medication,
@@ -61,6 +65,7 @@ const CLINICAL_PRESETS = [
   'Order Fasting Metabolic Panel (HbA1c, BUN, Serum Creatinine, eGFR).',
   'Restrict dietary sodium to <2,000 mg/day and log morning weights.',
   'Schedule 14-day Telehealth RPM follow-up with cardiology team.',
+  '⏰ Dose Reminder: Scheduled medication time. Please take with water and log in app.',
 ];
 
 export const DoctorDashboardScreen: React.FC = () => {
@@ -70,6 +75,7 @@ export const DoctorDashboardScreen: React.FC = () => {
   const [selectedPatientId, setSelectedPatientId] = useState<string>('pat-1');
   const [patientSearch, setPatientSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState<'all' | 'high' | 'medium' | 'stable'>('all');
+  const [behaviorFilter, setBehaviorFilter] = useState<'all' | 'good' | 'attention' | 'pending'>('all');
   const [doctorNote, setDoctorNote] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [activeMeds, setActiveMeds] = useState<Medication[]>([]);
@@ -96,6 +102,17 @@ export const DoctorDashboardScreen: React.FC = () => {
   const [enrollRisk, setEnrollRisk] = useState<'stable' | 'medium' | 'high'>('medium');
   const [enrollPreApprove, setEnrollPreApprove] = useState(true);
 
+  // Initial Prescription when enrolling patient
+  const [enrollMedName, setEnrollMedName] = useState('');
+  const [enrollMedDosage, setEnrollMedDosage] = useState('');
+  const [enrollMedTimes, setEnrollMedTimes] = useState('08:00');
+
+  // Dose Reminder Modal State
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
+  const [reminderMedName, setReminderMedName] = useState('');
+  const [reminderDosage, setReminderDosage] = useState('');
+  const [reminderMessage, setReminderMessage] = useState('');
+
   // Prescription Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
@@ -121,11 +138,11 @@ export const DoctorDashboardScreen: React.FC = () => {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
       const [m, v, p, c, d, patList] = await Promise.all([
-        StorageService.getMedications(),
+        StorageService.getMedications(selectedPatientId),
         StorageService.getVitals(),
         StorageService.getProfile(),
         StorageService.getCaregiver(),
-        StorageService.getDailyDoses(todayStr),
+        StorageService.getDailyDoses(todayStr, selectedPatientId),
         StorageService.getPatients(),
       ]);
       setActiveMeds(m);
@@ -150,11 +167,24 @@ export const DoctorDashboardScreen: React.FC = () => {
       p.name.toLowerCase().includes(patientSearch.toLowerCase()) ||
       p.conditions.some(c => c.toLowerCase().includes(patientSearch.toLowerCase())) ||
       (p.email && p.email.toLowerCase().includes(patientSearch.toLowerCase()));
+
+    let matchesBehavior = true;
+    if (behaviorFilter === 'pending') {
+      matchesBehavior = p.approvalStatus === 'pending';
+    } else if (behaviorFilter === 'good') {
+      matchesBehavior = p.behaviorRating === 'good' || (p.adherenceRate ?? 100) >= 80;
+    } else if (behaviorFilter === 'attention') {
+      matchesBehavior =
+        p.behaviorRating === 'poor' ||
+        (p.adherenceRate ?? 100) < 80 ||
+        (p.dosesMissedCount ?? 0) > 0;
+    }
+
     const matchesRisk = riskFilter === 'all' || p.riskLevel === riskFilter;
-    return matchesSearch && matchesRisk;
+    return matchesSearch && matchesBehavior && matchesRisk;
   });
 
-  // Doctor enrolls a new patient
+  // Doctor enrolls a new patient (with optional initial medicine & dose)
   const handleEnrollPatient = async () => {
     if (!enrollName.trim() || !enrollEmail.trim()) {
       Alert.alert('Required Information', 'Please provide at least the patient full legal name and email address.');
@@ -180,6 +210,9 @@ export const DoctorDashboardScreen: React.FC = () => {
       allergies: enrollAllergies.split(',').map(a => a.trim()).filter(Boolean),
       riskLevel: enrollRisk,
       adherenceRate: 100,
+      behaviorRating: 'good',
+      dosesTakenCount: 0,
+      dosesMissedCount: 0,
       latestBP: '120/80',
       latestGlucose: '95 mg/dL',
       phone: enrollPhone.trim() || '+1 (555) 000-0000',
@@ -196,18 +229,131 @@ export const DoctorDashboardScreen: React.FC = () => {
       const updatedList = await StorageService.savePatient(newPatient);
       setPatients(updatedList);
       setSelectedPatientId(newPatient.id);
+
+      // If initial medication was configured, save it for this patient!
+      if (enrollMedName.trim() && enrollMedDosage.trim()) {
+        const timesArray = enrollMedTimes.split(',').map(t => t.trim()).filter(Boolean);
+        const initialMed: Medication = {
+          id: `med-${Date.now()}`,
+          patientId: newPatient.id,
+          name: enrollMedName.trim(),
+          dosage: enrollMedDosage.trim(),
+          form: 'tablet',
+          color: '#0284C7',
+          instructions: 'Take as directed by physician',
+          frequency: timesArray.length > 1 ? 'twice_daily' : 'daily',
+          times: timesArray.length > 0 ? timesArray : ['08:00'],
+          stockCurrent: 60,
+          stockRefillAlert: 7,
+          prescribedBy: user?.fullName || 'Dr. Robert Henderson, M.D.',
+          rxNumber: `RX-${Math.floor(100000 + Math.random() * 900000)}`,
+          pharmacyName: 'Metro Care Pharmacy',
+          pharmacyPhone: '(555) 831-2900',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+        };
+        await StorageService.saveMedication(initialMed, newPatient.id);
+        const todayStr = new Date().toISOString().split('T')[0];
+        await StorageService.regenerateDailyDoses(todayStr);
+      }
+
+      await loadPatientData();
       setIsEnrollModalOpen(false);
       setEnrollName('');
       setEnrollEmail('');
       setEnrollPhone('');
       setEnrollCaregiverName('');
       setEnrollCaregiverPhone('');
+      setEnrollMedName('');
+      setEnrollMedDosage('');
+      setEnrollMedTimes('08:00');
+
       Alert.alert(
         'Patient Enrolled Successfully',
-        `${newPatient.name} has been enrolled in RPM cohort with ${newPatient.approvalStatus === 'approved' ? '✓ Immediate Login Access' : '⏳ Pending Status'}.`
+        `${newPatient.name} has been enrolled in RPM cohort with ${newPatient.approvalStatus === 'approved' ? '✓ Immediate Login Access' : '⏳ Pending Status'}.${enrollMedName.trim() ? ` Starting dose configured for ${enrollMedName}.` : ''}`
       );
     } catch {
       Alert.alert('Error', 'Failed to enroll new patient.');
+    }
+  };
+
+  // Doctor resets cohort to Clean Slate or Restores Demo Cohort
+  const handleResetCohort = () => {
+    Alert.alert(
+      'Cohort Data Management',
+      'Choose an action for your patient cohort and medication data:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: '🗑️ Clear Sample Data (Start Fresh)',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await StorageService.resetToCleanSlate();
+              setPatients([]);
+              setActiveMeds([]);
+              setVitals([]);
+              setDoses([]);
+              Alert.alert(
+                'Clean Slate Activated',
+                'All canned dummy data has been removed. You can now tap "+ Enroll Patient" to add your real patients and their medicine doses.'
+              );
+            } catch {
+              Alert.alert('Error', 'Failed to clear sample cohort.');
+            }
+          },
+        },
+        {
+          text: '🔄 Restore Demo Cohort',
+          onPress: async () => {
+            try {
+              const list = await StorageService.restoreSampleCohort();
+              setPatients(list);
+              if (list.length > 0) setSelectedPatientId(list[0].id);
+              await loadPatientData();
+              Alert.alert('Demo Restored', 'Sample cohort and medications loaded.');
+            } catch {
+              Alert.alert('Error', 'Failed to restore demo cohort.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Open Dose Reminder Modal
+  const handleOpenReminderModal = () => {
+    if (!selectedPatient) return;
+    const firstMed = activeMeds.find(m => m.isActive) || activeMeds[0];
+    const medName = firstMed ? firstMed.name : 'Scheduled Medication';
+    const medDose = firstMed ? firstMed.dosage : 'Standard Dose';
+    setReminderMedName(medName);
+    setReminderDosage(medDose);
+    setReminderMessage(
+      `Reminder from ${user?.fullName || 'Dr. Henderson'}: Please take your ${medName} (${medDose}) now with a glass of water.`
+    );
+    setIsReminderModalOpen(true);
+  };
+
+  // Dispatch Immediate Dose Reminder
+  const handleDispatchDoseReminder = async () => {
+    if (!selectedPatient) return;
+    try {
+      await StorageService.sendDoseReminder({
+        patientId: selectedPatient.id,
+        patientName: selectedPatient.name,
+        medicationName: reminderMedName || 'Scheduled Medication',
+        dosage: reminderDosage || 'Standard Dose',
+        customMessage: reminderMessage,
+      });
+      setIsReminderModalOpen(false);
+      await loadPatientData();
+      Alert.alert(
+        'Dose Reminder Dispatched',
+        `Immediate dose alert sent directly to ${selectedPatient.name}'s phone for ${reminderMedName} (${reminderDosage}).`
+      );
+    } catch {
+      Alert.alert('Error', 'Failed to dispatch dose reminder.');
     }
   };
 
@@ -299,6 +445,7 @@ export const DoctorDashboardScreen: React.FC = () => {
 
     const newMed: Medication = {
       id: `med-${Date.now()}`,
+      patientId: selectedPatient.id,
       name: newMedName.trim(),
       dosage: newMedDosage.trim(),
       form: newMedForm,
@@ -317,9 +464,9 @@ export const DoctorDashboardScreen: React.FC = () => {
     };
 
     try {
-      await StorageService.saveMedication(newMed);
+      await StorageService.saveMedication(newMed, selectedPatient.id);
       const todayStr = new Date().toISOString().split('T')[0];
-      await StorageService.regenerateDailyDoses(todayStr);
+      await StorageService.regenerateDailyDoses(todayStr, selectedPatient.id);
       await loadPatientData();
       setIsAddModalOpen(false);
 
@@ -427,14 +574,25 @@ export const DoctorDashboardScreen: React.FC = () => {
                 <Text style={styles.rosterSectionTitle}>Patient Roster ({filteredPatients.length})</Text>
                 <Text style={styles.rosterSectionSub}>Active remote monitoring & enrolled accounts</Text>
               </View>
-              <TouchableOpacity
-                style={styles.enrollPatientBtn}
-                onPress={() => setIsEnrollModalOpen(true)}
-                activeOpacity={0.85}
-              >
-                <Plus size={15} color="#FFFFFF" />
-                <Text style={styles.enrollPatientBtnText}>+ Enroll Patient</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TouchableOpacity
+                  style={styles.cleanSlateBtn}
+                  onPress={handleResetCohort}
+                  activeOpacity={0.8}
+                >
+                  <RotateCcw size={12} color="#DC2626" />
+                  <Text style={styles.cleanSlateBtnText}>Reset / Fresh</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.enrollPatientBtn}
+                  onPress={() => setIsEnrollModalOpen(true)}
+                  activeOpacity={0.85}
+                >
+                  <Plus size={15} color="#FFFFFF" />
+                  <Text style={styles.enrollPatientBtnText}>+ Enroll</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Pending Approvals Notice Banner */}
@@ -482,28 +640,32 @@ export const DoctorDashboardScreen: React.FC = () => {
               />
             </View>
 
-            {/* Risk Chips */}
+            {/* Behavior & Status Filter Chips */}
             <View style={styles.chipRow}>
-              {(['all', 'high', 'medium', 'stable'] as const).map(f => (
+              {[
+                { key: 'all', label: 'ALL PATIENTS' },
+                { key: 'good', label: '🟢 GOOD BEHAVIOR' },
+                { key: 'attention', label: '🔴 NEEDS ATTENTION' },
+                { key: 'pending', label: '⏳ PENDING' },
+              ].map(f => (
                 <TouchableOpacity
-                  key={f}
-                  style={[styles.filterChip, riskFilter === f && styles.filterChipActive]}
-                  onPress={() => setRiskFilter(f)}
+                  key={f.key}
+                  style={[styles.filterChip, behaviorFilter === f.key && styles.filterChipActive]}
+                  onPress={() => setBehaviorFilter(f.key as any)}
                 >
-                  <Text style={[styles.filterChipText, riskFilter === f && styles.filterChipTextActive]}>
-                    {f.toUpperCase()}
+                  <Text style={[styles.filterChipText, behaviorFilter === f.key && styles.filterChipTextActive]}>
+                    {f.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Horizontal Patient Cards */}
+            {/* Horizontal Patient Cards with Behavior & Dose Tracking */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.patientScroll}>
               {filteredPatients.map(pat => {
                 const isSelected = pat.id === selectedPatientId;
                 const isPending = pat.approvalStatus === 'pending';
-                const isHigh = pat.riskLevel === 'high';
-                const isMed = pat.riskLevel === 'medium';
+                const isGood = pat.behaviorRating === 'good' || (pat.adherenceRate ?? 100) >= 80;
                 return (
                   <TouchableOpacity
                     key={pat.id}
@@ -520,23 +682,27 @@ export const DoctorDashboardScreen: React.FC = () => {
                       ) : (
                         <View
                           style={[
-                            styles.riskBadge,
-                            isHigh ? styles.riskBadgeHigh : isMed ? styles.riskBadgeMed : styles.riskBadgeStable,
+                            styles.behaviorBadgeSmall,
+                            isGood ? styles.badgeGood : styles.badgePoor,
                           ]}
                         >
                           <Text
                             style={[
-                              styles.riskBadgeText,
-                              isHigh ? styles.riskBadgeTextHigh : isMed ? styles.riskBadgeTextMed : styles.riskBadgeTextStable,
+                              styles.behaviorBadgeTextSmall,
+                              isGood ? styles.badgeTextGood : styles.badgeTextPoor,
                             ]}
                           >
-                            {pat.riskLevel.toUpperCase()}
+                            {isGood ? '🟢 GOOD' : '🔴 MISSED'}
                           </Text>
                         </View>
                       )}
                     </View>
                     <Text style={styles.cardPatientMeta}>Age {pat.age} • {pat.conditions[0] || 'Under Observation'}</Text>
-                    <Text style={styles.cardPatientSub}>BP: {pat.latestBP} • {pat.adherenceRate}% Adherence</Text>
+                    <Text style={styles.cardPatientSub}>BP: {pat.latestBP} • {pat.adherenceRate ?? 100}% Adherence</Text>
+                    <Text style={styles.cardPatientDoses}>
+                      Taken: <Text style={{ color: '#15803D', fontWeight: '700' }}>{pat.dosesTakenCount ?? 0}</Text> • Missed:{' '}
+                      <Text style={{ color: '#DC2626', fontWeight: '700' }}>{pat.dosesMissedCount ?? 0}</Text>
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -617,6 +783,79 @@ export const DoctorDashboardScreen: React.FC = () => {
                     <Text style={styles.revokeAccessBtnText}>Suspend / Revoke Login Access</Text>
                   </TouchableOpacity>
                 )}
+              </View>
+
+              {/* Patient Behavior & Adherence Analysis */}
+              <View style={styles.behaviorCard}>
+                <View style={styles.behaviorCardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <HeartPulse
+                      size={16}
+                      color={
+                        selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                          ? '#DC2626'
+                          : '#0D9488'
+                      }
+                    />
+                    <Text style={styles.behaviorCardTitle}>Patient Behavior & Adherence Watch</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.behaviorPill,
+                      selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                        ? styles.behaviorPillPoor
+                        : styles.behaviorPillGood,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.behaviorPillText,
+                        selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                          ? styles.behaviorPillTextPoor
+                          : styles.behaviorPillTextGood,
+                      ]}
+                    >
+                      {selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                        ? '🔴 NEEDS ATTENTION'
+                        : '🟢 GOOD BEHAVIOR'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.behaviorStatsRow}>
+                  <View style={styles.behaviorStatBox}>
+                    <Text style={styles.behaviorStatNum}>{selectedPatient.adherenceRate ?? 100}%</Text>
+                    <Text style={styles.behaviorStatLabel}>Compliance</Text>
+                  </View>
+                  <View style={styles.behaviorStatBox}>
+                    <Text style={[styles.behaviorStatNum, { color: '#15803D' }]}>
+                      {selectedPatient.dosesTakenCount ?? 0}
+                    </Text>
+                    <Text style={styles.behaviorStatLabel}>Doses Taken</Text>
+                  </View>
+                  <View style={styles.behaviorStatBox}>
+                    <Text style={[styles.behaviorStatNum, { color: '#DC2626' }]}>
+                      {selectedPatient.dosesMissedCount ?? 0}
+                    </Text>
+                    <Text style={styles.behaviorStatLabel}>Doses Missed</Text>
+                  </View>
+                </View>
+
+                <View style={styles.reminderActionRow}>
+                  <Text style={styles.reminderActionSub}>
+                    {selectedPatient.lastReminderSent
+                      ? `Last dose reminder sent: ${new Date(selectedPatient.lastReminderSent).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                      : 'Keep patient on track by dispatching an instant medication dose reminder.'}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.sendReminderBtn}
+                    onPress={handleOpenReminderModal}
+                    activeOpacity={0.8}
+                  >
+                    <Bell size={13} color="#FFFFFF" />
+                    <Text style={styles.sendReminderBtnText}>⏰ Send Dose Reminder</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Diagnoses */}
@@ -1141,6 +1380,49 @@ export const DoctorDashboardScreen: React.FC = () => {
                 ))}
               </View>
 
+              {/* Initial Medication & Dose (Optional) */}
+              <View style={styles.enrollRxSection}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Pill size={14} color="#0D9488" />
+                  <Text style={styles.enrollRxTitle}>Starting Medication & Dose (Optional)</Text>
+                </View>
+                <Text style={styles.enrollRxSub}>
+                  Configure patient's initial active prescription immediately upon onboarding.
+                </Text>
+
+                <Text style={styles.label}>Medication Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Lisinopril, Metformin, Losartan"
+                  placeholderTextColor="#94A3B8"
+                  value={enrollMedName}
+                  onChangeText={setEnrollMedName}
+                />
+
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Dosage Strength</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 10mg, 500mg"
+                      placeholderTextColor="#94A3B8"
+                      value={enrollMedDosage}
+                      onChangeText={setEnrollMedDosage}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Dose Times</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="08:00, 20:00"
+                      placeholderTextColor="#94A3B8"
+                      value={enrollMedTimes}
+                      onChangeText={setEnrollMedTimes}
+                    />
+                  </View>
+                </View>
+              </View>
+
               {/* Login Authorization Checkbox */}
               <TouchableOpacity
                 style={styles.checkboxRow}
@@ -1163,6 +1445,61 @@ export const DoctorDashboardScreen: React.FC = () => {
                 <Text style={styles.submitModalBtnText}>Enroll Patient into RPM Cohort</Text>
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: Send Dose Reminder */}
+      <Modal
+        visible={isReminderModalOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setIsReminderModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalTop}>
+              <View>
+                <Text style={styles.modalTitle}>⏰ Send Medication Reminder</Text>
+                <Text style={styles.modalSub}>Dispatches high-priority reminder to {selectedPatient?.name}'s phone</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsReminderModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.label}>Target Medication</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Lisinopril, Metformin"
+              placeholderTextColor="#94A3B8"
+              value={reminderMedName}
+              onChangeText={setReminderMedName}
+            />
+
+            <Text style={styles.label}>Dosage</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 10mg PO"
+              placeholderTextColor="#94A3B8"
+              value={reminderDosage}
+              onChangeText={setReminderDosage}
+            />
+
+            <Text style={styles.label}>Alert Message for Patient</Text>
+            <TextInput
+              style={[styles.input, { height: 80 }]}
+              multiline
+              placeholder="Enter instructions for patient..."
+              placeholderTextColor="#94A3B8"
+              value={reminderMessage}
+              onChangeText={setReminderMessage}
+            />
+
+            <TouchableOpacity style={styles.submitReminderModalBtn} onPress={handleDispatchDoseReminder}>
+              <Bell size={16} color="#FFFFFF" />
+              <Text style={styles.submitModalBtnText}>Dispatch Immediate Dose Alert</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -2137,5 +2474,168 @@ const styles = StyleSheet.create({
   checkboxSub: {
     fontSize: 10,
     color: '#64748B',
+  },
+  cleanSlateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    gap: 4,
+  },
+  cleanSlateBtnText: {
+    color: '#DC2626',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  behaviorBadgeSmall: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  behaviorBadgeTextSmall: {
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  badgeGood: {
+    backgroundColor: '#DCFCE7',
+  },
+  badgePoor: {
+    backgroundColor: '#FEE2E2',
+  },
+  badgeTextGood: {
+    color: '#15803D',
+  },
+  badgeTextPoor: {
+    color: '#B91C1C',
+  },
+  cardPatientDoses: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  behaviorCard: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  behaviorCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  behaviorCardTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  behaviorPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  behaviorPillGood: {
+    backgroundColor: '#DCFCE7',
+  },
+  behaviorPillPoor: {
+    backgroundColor: '#FEE2E2',
+  },
+  behaviorPillText: {
+    fontSize: 8,
+    fontWeight: '800',
+  },
+  behaviorPillTextGood: {
+    color: '#15803D',
+  },
+  behaviorPillTextPoor: {
+    color: '#B91C1C',
+  },
+  behaviorStatsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  behaviorStatBox: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  behaviorStatNum: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  behaviorStatLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 1,
+  },
+  reminderActionRow: {
+    flexDirection: 'column',
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  reminderActionSub: {
+    fontSize: 10,
+    color: '#64748B',
+    lineHeight: 14,
+  },
+  sendReminderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0D9488',
+    borderRadius: 8,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  sendReminderBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  enrollRxSection: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  enrollRxTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0D9488',
+  },
+  enrollRxSub: {
+    fontSize: 10,
+    color: '#0F766E',
+    marginBottom: 6,
+  },
+  submitReminderModalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0D9488',
+    borderRadius: 10,
+    paddingVertical: 11,
+    marginTop: 14,
+    gap: 6,
   },
 });

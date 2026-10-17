@@ -8,39 +8,46 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { Bell, AlertTriangle, Calendar, Sparkles } from 'lucide-react-native';
-import { DoseItem, DoseStatus, Medication } from '../types';
+import { Bell, AlertTriangle, Calendar, Sparkles, CheckCircle, Clock } from 'lucide-react-native';
+import { DoseItem, DoseStatus, Medication, DoseReminder } from '../types';
 import { StorageService } from '../services/storage';
 import { NotificationService } from '../services/notifications';
 import { AdherenceSummary } from '../components/AdherenceRing';
 import { DoseCard } from '../components/DoseCard';
 import { Colors } from '../theme/colors';
+import { useAuth } from '../context/AuthContext';
 
 interface TodayScreenProps {
   onNavigateToCabinet: () => void;
 }
 
 export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigateToCabinet }) => {
+  const { user } = useAuth();
   const [doses, setDoses] = useState<DoseItem[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [reminders, setReminders] = useState<DoseReminder[]>([]);
+  const [dismissedReminders, setDismissedReminders] = useState<string[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<'All' | 'Morning' | 'Afternoon' | 'Evening' | 'Night'>('All');
   const [refreshing, setRefreshing] = useState(false);
 
   // Today string YYYY-MM-DD
   const todayStr = new Date().toISOString().split('T')[0];
+  const patientId = user?.id || 'pat-1';
 
   const loadData = useCallback(async () => {
     try {
-      const [fetchedDoses, fetchedMeds] = await Promise.all([
-        StorageService.getDailyDoses(todayStr),
-        StorageService.getMedications(),
+      const [fetchedDoses, fetchedMeds, fetchedReminders] = await Promise.all([
+        StorageService.getDailyDoses(todayStr, patientId),
+        StorageService.getMedications(patientId),
+        StorageService.getDoseReminders(patientId),
       ]);
       setDoses(fetchedDoses);
       setMedications(fetchedMeds);
+      setReminders(fetchedReminders);
     } catch (e) {
       console.error('Error loading Today data:', e);
     }
-  }, [todayStr]);
+  }, [todayStr, patientId]);
 
   useEffect(() => {
     loadData();
@@ -50,6 +57,10 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigateToCabinet })
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  const handleDismissReminder = (remId: string) => {
+    setDismissedReminders(prev => [...prev, remId]);
   };
 
   const handleUpdateStatus = async (doseId: string, status: DoseStatus) => {
@@ -119,6 +130,32 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({ onNavigateToCabinet })
 
       {/* Adherence Summary Card */}
       <AdherenceSummary totalDoses={totalDoses} takenDoses={takenDoses} streakDays={14} />
+
+      {/* Physician Dose Reminder Banner */}
+      {reminders
+        .filter(r => !dismissedReminders.includes(r.id))
+        .map(rem => (
+          <View key={rem.id} style={styles.physicianReminderBox}>
+            <View style={styles.physicianReminderHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Bell size={16} color="#0D9488" />
+                <Text style={styles.physicianReminderTitle}>Doctor Dose Reminder</Text>
+              </View>
+              <TouchableOpacity onPress={() => handleDismissReminder(rem.id)}>
+                <Text style={styles.physicianReminderDismiss}>✕ Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.physicianReminderMessage}>{rem.message}</Text>
+            <View style={styles.physicianReminderFooter}>
+              <Text style={styles.physicianReminderMed}>
+                Rx: <Text style={{ fontWeight: '700', color: '#0F172A' }}>{rem.medicationName} ({rem.dosage})</Text>
+              </Text>
+              <Text style={styles.physicianReminderTime}>
+                {new Date(rem.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+          </View>
+        ))}
 
       {/* Low Stock Warning Banner */}
       {lowStockMeds.length > 0 && (
@@ -290,5 +327,59 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     textAlign: 'center',
     marginTop: 4,
+  },
+  physicianReminderBox: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1.5,
+    borderColor: '#0D9488',
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  physicianReminderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  physicianReminderTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0D9488',
+  },
+  physicianReminderDismiss: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  physicianReminderMessage: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  physicianReminderFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#CCFBF1',
+    paddingTop: 6,
+  },
+  physicianReminderMed: {
+    fontSize: 11,
+    color: '#047857',
+  },
+  physicianReminderTime: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '600',
   },
 });

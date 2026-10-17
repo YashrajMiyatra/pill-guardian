@@ -1,6 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Medication, DoseItem, VitalLog, UserProfile, CaregiverContact, DoseStatus, PatientAccount, PatientApprovalStatus } from '../types';
-import { SEED_MEDICATIONS, SEED_VITALS, SEED_USER_PROFILE, SEED_CAREGIVER, SEED_PATIENTS } from '../data/seedData';
+import {
+  Medication,
+  DoseItem,
+  VitalLog,
+  UserProfile,
+  CaregiverContact,
+  DoseStatus,
+  PatientAccount,
+  PatientApprovalStatus,
+  PatientBehaviorRating,
+  DoseReminder,
+} from '../types';
+import {
+  SEED_MEDICATIONS,
+  SEED_VITALS,
+  SEED_USER_PROFILE,
+  SEED_CAREGIVER,
+  SEED_PATIENTS,
+} from '../data/seedData';
+import { NotificationService } from './notifications';
 
 const KEYS = {
   MEDICATIONS: '@pill_guardian_medications',
@@ -9,7 +27,9 @@ const KEYS = {
   PROFILE: '@pill_guardian_profile',
   CAREGIVER: '@pill_guardian_caregiver',
   PATIENTS: '@pill_guardian_patients',
-  INITIALIZED: '@pill_guardian_initialized_v2',
+  REMINDERS: '@pill_guardian_reminders',
+  FRESH_RESET: '@pill_guardian_fresh_reset',
+  INITIALIZED: '@pill_guardian_initialized_v4',
 };
 
 // Helper: Determine time category from "HH:MM"
@@ -22,9 +42,15 @@ export function getTimeCategory(timeStr: string): 'Morning' | 'Afternoon' | 'Eve
 }
 
 export const StorageService = {
-  // Initialize default data if not already done
+  // Initialize default data if not already done and not in clean reset state
   async initDefaults(): Promise<void> {
     try {
+      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
+      if (isFresh === 'true') {
+        // User explicitly wants clean state (no dummy data)
+        return;
+      }
+
       const initialized = await AsyncStorage.getItem(KEYS.INITIALIZED);
       if (!initialized) {
         await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(SEED_MEDICATIONS));
@@ -39,30 +65,70 @@ export const StorageService = {
     }
   },
 
-  // Medications CRUD
-  async getMedications(): Promise<Medication[]> {
+  // Medications CRUD with Patient Association
+  async getMedications(patientId?: string): Promise<Medication[]> {
     try {
+      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.MEDICATIONS);
-      return data ? JSON.parse(data) : SEED_MEDICATIONS;
+      let list: Medication[] = [];
+
+      if (data) {
+        list = JSON.parse(data);
+      } else if (isFresh !== 'true') {
+        list = SEED_MEDICATIONS;
+      }
+
+      if (!patientId || patientId === 'all') {
+        return list;
+      }
+      return list.filter(
+        m => m.patientId === patientId || (!m.patientId && (patientId === 'pat-1' || patientId === 'default'))
+      );
     } catch (e) {
       console.error('Error fetching medications:', e);
-      return SEED_MEDICATIONS;
+      return [];
     }
   },
 
-  async saveMedication(med: Medication): Promise<Medication[]> {
+  async saveMedication(med: Medication, patientId?: string): Promise<Medication[]> {
     try {
-      const current = await this.getMedications();
-      const existingIdx = current.findIndex(m => m.id === med.id);
+      if (patientId && !med.patientId) {
+        med.patientId = patientId;
+      }
+      const allMeds = await this.getMedications();
+      const existingIdx = allMeds.findIndex(m => m.id === med.id);
       let updated: Medication[];
       if (existingIdx >= 0) {
-        updated = [...current];
+        updated = [...allMeds];
         updated[existingIdx] = med;
       } else {
-        updated = [med, ...current];
+        updated = [med, ...allMeds];
       }
       await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(updated));
-      return updated;
+
+      // Regenerate doses for today
+      const todayStr = new Date().toISOString().split('T')[0];
+      await this.regenerateDailyDoses(todayStr, patientId);
+
+      // Auto-schedule daily dose reminder notifications on device
+      if (med.times && med.times.length > 0) {
+        med.times.forEach(time => {
+          const parts = time.split(':');
+          const hr = parseInt(parts[0], 10) || 8;
+          const min = parseInt(parts[1], 10) || 0;
+          NotificationService.scheduleDoseReminder(
+            med.name,
+            med.dosage,
+            med.instructions,
+            hr,
+            min
+          ).catch(() => {});
+        });
+      }
+
+      return updated.filter(
+        m => !patientId || m.patientId === patientId || (!m.patientId && patientId === 'pat-1')
+      );
     } catch (e) {
       console.error('Error saving medication:', e);
       throw e;
@@ -103,7 +169,7 @@ export const StorageService = {
         current[idx] = { ...current[idx], ...updates };
         await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(current));
         const todayStr = new Date().toISOString().split('T')[0];
-        await this.regenerateDailyDoses(todayStr);
+        await this.regenerateDailyDoses(todayStr, current[idx].patientId);
       }
       return current;
     } catch (e) {
@@ -120,7 +186,7 @@ export const StorageService = {
         current[idx].isActive = false;
         await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(current));
         const todayStr = new Date().toISOString().split('T')[0];
-        await this.regenerateDailyDoses(todayStr);
+        await this.regenerateDailyDoses(todayStr, current[idx].patientId);
       }
       return current;
     } catch (e) {
@@ -129,16 +195,17 @@ export const StorageService = {
     }
   },
 
-  async regenerateDailyDoses(dateString: string): Promise<DoseItem[]> {
+  async regenerateDailyDoses(dateString: string, patientId?: string): Promise<DoseItem[]> {
     const key = `${KEYS.DOSE_LOGS_PREFIX}${dateString}`;
     try {
-      const meds = await this.getMedications();
+      const meds = await this.getMedications(patientId);
       const generatedDoses: DoseItem[] = [];
 
       meds.filter(m => m.isActive).forEach(med => {
         med.times.forEach(time => {
           generatedDoses.push({
             id: `${med.id}_${time}_${dateString}`,
+            patientId: med.patientId || patientId,
             medicationId: med.id,
             medicationName: med.name,
             dosage: med.dosage,
@@ -162,40 +229,22 @@ export const StorageService = {
   },
 
   // Daily Doses logic
-  async getDailyDoses(dateString: string): Promise<DoseItem[]> {
+  async getDailyDoses(dateString: string, patientId?: string): Promise<DoseItem[]> {
     const key = `${KEYS.DOSE_LOGS_PREFIX}${dateString}`;
     try {
       const stored = await AsyncStorage.getItem(key);
-      if (stored) {
-        return JSON.parse(stored);
+      let doses: DoseItem[] = stored ? JSON.parse(stored) : [];
+
+      if (!stored || doses.length === 0) {
+        doses = await this.regenerateDailyDoses(dateString, patientId);
       }
 
-      // Generate doses for this date from active medications
-      const meds = await this.getMedications();
-      const generatedDoses: DoseItem[] = [];
-
-      meds.filter(m => m.isActive).forEach(med => {
-        med.times.forEach((time, idx) => {
-          generatedDoses.push({
-            id: `${med.id}_${time}_${dateString}`,
-            medicationId: med.id,
-            medicationName: med.name,
-            dosage: med.dosage,
-            form: med.form,
-            color: med.color,
-            instructions: med.instructions,
-            scheduledTime: time,
-            timeCategory: getTimeCategory(time),
-            status: 'pending',
-          });
-        });
-      });
-
-      // Sort by scheduled time
-      generatedDoses.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
-
-      await AsyncStorage.setItem(key, JSON.stringify(generatedDoses));
-      return generatedDoses;
+      if (patientId && patientId !== 'all') {
+        return doses.filter(
+          d => d.patientId === patientId || (!d.patientId && (patientId === 'pat-1' || patientId === 'default'))
+        );
+      }
+      return doses;
     } catch (e) {
       console.error('Error getting daily doses:', e);
       return [];
@@ -225,6 +274,10 @@ export const StorageService = {
           // If reverted from taken to pending/skipped, restore 1 pill
           await this.updateMedicationStock(dose.medicationId, 1);
         }
+
+        // Track behavior for this patient!
+        const patId = dose.patientId || 'pat-1';
+        await this.recordDoseBehavior(patId, status);
       }
       await AsyncStorage.setItem(key, JSON.stringify(current));
       return current;
@@ -234,14 +287,107 @@ export const StorageService = {
     }
   },
 
+  // Patient Behavior & Adherence Tracker ("watch which one is behaving good")
+  async recordDoseBehavior(patientId: string, status: DoseStatus): Promise<void> {
+    try {
+      const patients = await this.getPatients();
+      const p = patients.find(
+        item => item.id === patientId || (item.email && item.email.toLowerCase() === patientId.toLowerCase())
+      );
+      if (!p) return;
+
+      if (status === 'taken') {
+        p.dosesTakenCount = (p.dosesTakenCount || 0) + 1;
+        p.lastDoseTime = `Taken at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      } else if (status === 'skipped') {
+        p.dosesMissedCount = (p.dosesMissedCount || 0) + 1;
+        p.lastDoseTime = `Skipped at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      const total = (p.dosesTakenCount || 0) + (p.dosesMissedCount || 0);
+      if (total > 0) {
+        p.adherenceRate = Math.round(((p.dosesTakenCount || 0) / total) * 100);
+      }
+      p.behaviorRating = p.adherenceRate >= 85 ? 'good' : p.adherenceRate >= 60 ? 'fair' : 'poor';
+
+      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(patients));
+    } catch (e) {
+      console.warn('Error recording dose behavior:', e);
+    }
+  },
+
+  // Reminders System (Send reminder to patient phone)
+  async sendDoseReminder(reminder: {
+    patientId: string;
+    patientName: string;
+    medicationName: string;
+    dosage: string;
+    scheduledTime?: string;
+    customMessage?: string;
+  }): Promise<DoseReminder> {
+    const newReminder: DoseReminder = {
+      id: `rem-${Date.now()}`,
+      patientId: reminder.patientId,
+      patientName: reminder.patientName,
+      medicationName: reminder.medicationName,
+      dosage: reminder.dosage,
+      scheduledTime: reminder.scheduledTime || 'Immediate',
+      sentAt: new Date().toISOString(),
+      message:
+        reminder.customMessage ||
+        `Doctor Reminder: Time to take your ${reminder.medicationName} (${reminder.dosage}). Maintain your healthy streak!`,
+      acknowledged: false,
+    };
+
+    try {
+      const stored = await AsyncStorage.getItem(KEYS.REMINDERS);
+      const list: DoseReminder[] = stored ? JSON.parse(stored) : [];
+      list.unshift(newReminder);
+      await AsyncStorage.setItem(KEYS.REMINDERS, JSON.stringify(list));
+
+      // Trigger actual mobile phone alert
+      await NotificationService.triggerTestReminder(
+        `💊 Dose Reminder for ${reminder.patientName}`,
+        newReminder.message
+      );
+
+      // Record on patient profile
+      const patients = await this.getPatients();
+      const pat = patients.find(p => p.id === reminder.patientId);
+      if (pat) {
+        pat.lastReminderSent = new Date().toISOString();
+        await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(patients));
+      }
+
+      return newReminder;
+    } catch (e) {
+      console.error('Error sending dose reminder:', e);
+      return newReminder;
+    }
+  },
+
+  async getDoseReminders(patientId?: string): Promise<DoseReminder[]> {
+    try {
+      const stored = await AsyncStorage.getItem(KEYS.REMINDERS);
+      const list: DoseReminder[] = stored ? JSON.parse(stored) : [];
+      if (!patientId || patientId === 'all') return list;
+      return list.filter(r => r.patientId === patientId || r.patientId === 'pat-1');
+    } catch {
+      return [];
+    }
+  },
+
   // Vitals CRUD
   async getVitals(): Promise<VitalLog[]> {
     try {
+      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.VITALS);
-      return data ? JSON.parse(data) : SEED_VITALS;
+      if (data) return JSON.parse(data);
+      if (isFresh === 'true') return [];
+      return SEED_VITALS;
     } catch (e) {
       console.error('Error fetching vitals:', e);
-      return SEED_VITALS;
+      return [];
     }
   },
 
@@ -260,8 +406,26 @@ export const StorageService = {
   // Profile & Caregiver
   async getProfile(): Promise<UserProfile> {
     try {
+      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.PROFILE);
-      return data ? JSON.parse(data) : SEED_USER_PROFILE;
+      if (data) return JSON.parse(data);
+      if (isFresh === 'true') {
+        return {
+          fullName: 'New Patient',
+          dateOfBirth: '1980-01-01',
+          bloodType: 'O+',
+          allergies: [],
+          chronicConditions: [],
+          emergencyNotes: '',
+          primaryDoctor: {
+            name: 'Dr. Robert Henderson, M.D.',
+            specialty: 'Cardiology',
+            phone: '+1 (555) 721-0044',
+            hospital: 'Metropolitan General Hospital',
+          },
+        };
+      }
+      return SEED_USER_PROFILE;
     } catch (e) {
       console.error('Error fetching profile:', e);
       return SEED_USER_PROFILE;
@@ -278,8 +442,19 @@ export const StorageService = {
 
   async getCaregiver(): Promise<CaregiverContact> {
     try {
+      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.CAREGIVER);
-      return data ? JSON.parse(data) : SEED_CAREGIVER;
+      if (data) return JSON.parse(data);
+      if (isFresh === 'true') {
+        return {
+          id: 'care-none',
+          name: 'Not Assigned',
+          relationship: 'Primary Caregiver',
+          phone: '',
+          isEmergency: false,
+        };
+      }
+      return SEED_CAREGIVER;
     } catch (e) {
       console.error('Error fetching caregiver:', e);
       return SEED_CAREGIVER;
@@ -297,23 +472,28 @@ export const StorageService = {
   // Patient Cohort & Approval System
   async getPatients(): Promise<PatientAccount[]> {
     try {
+      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.PATIENTS);
       if (data) {
         return JSON.parse(data);
       }
-      // If not stored yet, initialize with SEED_PATIENTS
+      if (isFresh === 'true') {
+        return [];
+      }
       await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(SEED_PATIENTS));
       return SEED_PATIENTS;
     } catch (e) {
       console.error('Error fetching patients:', e);
-      return SEED_PATIENTS;
+      return [];
     }
   },
 
   async savePatient(patient: PatientAccount): Promise<PatientAccount[]> {
     try {
       const current = await this.getPatients();
-      const existingIdx = current.findIndex(p => p.id === patient.id || (p.email && p.email.toLowerCase() === patient.email.toLowerCase()));
+      const existingIdx = current.findIndex(
+        p => p.id === patient.id || (p.email && p.email.toLowerCase() === patient.email.toLowerCase())
+      );
       let updated: PatientAccount[];
       if (existingIdx >= 0) {
         updated = [...current];
@@ -366,7 +546,6 @@ export const StorageService = {
         p => p.id === emailOrId || (p.email && p.email.toLowerCase() === emailOrId.toLowerCase())
       );
       if (!match) {
-        // Unknown account - register as pending by default
         return { approved: false, status: 'pending' };
       }
       return {
@@ -404,6 +583,9 @@ export const StorageService = {
         allergies: data.allergies || ['NKDA'],
         riskLevel: data.riskLevel || 'medium',
         adherenceRate: 100,
+        behaviorRating: 'good',
+        dosesTakenCount: 0,
+        dosesMissedCount: 0,
         latestBP: '120/80',
         latestGlucose: '95 mg/dL',
         phone: data.phone || '+1 (555) 000-0000',
@@ -419,6 +601,32 @@ export const StorageService = {
     } catch (e) {
       console.error('Error registering pending patient:', e);
       throw e;
+    }
+  },
+
+  // Clean Slate & Sample Data controls
+  async resetToCleanSlate(): Promise<void> {
+    try {
+      await AsyncStorage.setItem(KEYS.FRESH_RESET, 'true');
+      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify([]));
+      await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify([]));
+      await AsyncStorage.setItem(KEYS.VITALS, JSON.stringify([]));
+      await AsyncStorage.setItem(KEYS.REMINDERS, JSON.stringify([]));
+    } catch (e) {
+      console.error('Error resetting to clean slate:', e);
+    }
+  },
+
+  async restoreSampleCohort(): Promise<PatientAccount[]> {
+    try {
+      await AsyncStorage.removeItem(KEYS.FRESH_RESET);
+      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(SEED_PATIENTS));
+      await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(SEED_MEDICATIONS));
+      await AsyncStorage.setItem(KEYS.VITALS, JSON.stringify(SEED_VITALS));
+      return SEED_PATIENTS;
+    } catch (e) {
+      console.error('Error restoring sample cohort:', e);
+      return SEED_PATIENTS;
     }
   },
 };

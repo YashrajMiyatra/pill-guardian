@@ -163,15 +163,18 @@
 
     <div class="patient-search">
       <input type="text" class="search-input" id="searchPatient" placeholder="🔍 Search patient, email, condition..." onkeyup="filterPatients()" />
-      <button class="btn btn-primary btn-sm" style="width:100%; justify-content:center;" onclick="openEnrollPatientModal()">+ Enroll New Patient</button>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-primary btn-sm" style="flex:1; justify-content:center;" onclick="openEnrollPatientModal()">+ Enroll</button>
+        <button class="btn btn-danger btn-sm" style="justify-content:center;" onclick="resetToCleanSlate()" title="Wipe sample dummy data">🗑️ Reset</button>
+        <button class="btn btn-outline btn-sm" style="justify-content:center;" onclick="restoreSampleData()" title="Restore demo cohort">🔄 Demo</button>
+      </div>
     </div>
 
     <div class="filter-chips">
       <div class="filter-chip active" id="chipAll" onclick="setRiskFilter('all', this)">ALL (<span id="countAll">4</span>)</div>
+      <div class="filter-chip" onclick="setRiskFilter('good', this)">🟢 GOOD BEHAVIOR</div>
+      <div class="filter-chip" onclick="setRiskFilter('attention', this)">🔴 ATTENTION</div>
       <div class="filter-chip chip-pending" id="chipPending" onclick="setRiskFilter('pending', this)">PENDING (<span id="countPending">1</span>)</div>
-      <div class="filter-chip" onclick="setRiskFilter('high', this)">HIGH RISK</div>
-      <div class="filter-chip" onclick="setRiskFilter('medium', this)">MEDIUM</div>
-      <div class="filter-chip" onclick="setRiskFilter('stable', this)">STABLE</div>
     </div>
 
     <div class="patient-list" id="patientList"></div>
@@ -339,6 +342,33 @@
             <!-- Login Access & Authorization Widget -->
             <div id="profApprovalCard" style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px;"></div>
 
+            <!-- Patient Behavior & Adherence Analysis -->
+            <div id="profBehaviorCard" style="background:#f0fdfa; border:1px solid #ccfbf1; border-radius:10px; padding:12px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <strong style="font-size:12px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                  💓 Behavior & Adherence Watch
+                </strong>
+                <span id="profBehaviorBadge" class="badge badge-stable">🟢 GOOD BEHAVIOR</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
+                  <div style="font-size:14px; font-weight:800;" id="profStatAdherence">85%</div>
+                  <div style="font-size:9px; color:var(--muted); font-weight:700;">COMPLIANCE</div>
+                </div>
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
+                  <div style="font-size:14px; font-weight:800; color:#15803d;" id="profStatTaken">18</div>
+                  <div style="font-size:9px; color:var(--muted); font-weight:700;">DOSES TAKEN</div>
+                </div>
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
+                  <div style="font-size:14px; font-weight:800; color:#dc2626;" id="profStatMissed">1</div>
+                  <div style="font-size:9px; color:var(--muted); font-weight:700;">MISSED</div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" style="width:100%; justify-content:center;" onclick="sendQuickDoseReminder()">
+                ⏰ Send Immediate Dose Reminder to Phone
+              </button>
+            </div>
+
             <div style="margin-bottom:10px;">
               <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:3px;">Diagnosed Conditions:</div>
               <div id="profConditions"></div>
@@ -472,6 +502,26 @@
           <option value="medium" selected>Medium (Hypertension / Dosing Titration)</option>
           <option value="high">High Risk (Cardiac / Critical Alerts)</option>
         </select>
+      </div>
+
+      <!-- Initial Medication & Dose (Optional) -->
+      <div style="background:#f0fdfa; border:1px solid #ccfbf1; padding:10px; border-radius:8px; margin-top:10px; margin-bottom:10px;">
+        <div style="font-size:11px; font-weight:800; color:#0d9488; margin-bottom:4px;">💊 Starting Medication & Dose (Optional)</div>
+        <div style="font-size:10px; color:#0f766e; margin-bottom:8px;">Add the patient's initial active prescription upon enrollment.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Medication Name</label>
+            <input type="text" class="form-control" id="enrollMedName" placeholder="e.g. Lisinopril, Metformin" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dosage & Strength</label>
+            <input type="text" class="form-control" id="enrollMedDosage" placeholder="e.g. 10mg, 500mg" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Schedule Times</label>
+          <input type="text" class="form-control" id="enrollMedTimes" value="08:00, 20:00" />
+        </div>
       </div>
 
       <div class="form-group" style="margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:8px;">
@@ -699,8 +749,13 @@
     // Initialize or load from LocalStorage
     let patients = [];
     try {
+      const isFresh = localStorage.getItem('pill_guardian_fresh_reset');
       const stored = localStorage.getItem('pill_guardian_web_patients_v2');
-      patients = stored ? JSON.parse(stored) : INITIAL_PATIENTS;
+      if (isFresh === 'true') {
+        patients = stored ? JSON.parse(stored) : [];
+      } else {
+        patients = stored ? JSON.parse(stored) : INITIAL_PATIENTS;
+      }
     } catch {
       patients = INITIAL_PATIENTS;
     }
@@ -714,6 +769,40 @@
         localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify(patients));
       } catch (e) {
         console.warn('Storage save error:', e);
+      }
+    }
+
+    function resetToCleanSlate() {
+      if (confirm("Wipe all sample dummy data and start fresh? You can then enroll real patients and set their doses.")) {
+        patients = [];
+        currentPatientIndex = 0;
+        localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify([]));
+        localStorage.setItem('pill_guardian_fresh_reset', 'true');
+        renderSidebar();
+        renderPatientDetails();
+        showToast("Clean slate activated. All sample data cleared. Tap '+ Enroll' to add your real patients.");
+      }
+    }
+
+    function restoreSampleData() {
+      patients = JSON.parse(JSON.stringify(INITIAL_PATIENTS));
+      currentPatientIndex = 0;
+      localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify(patients));
+      localStorage.removeItem('pill_guardian_fresh_reset');
+      renderSidebar();
+      renderPatientDetails();
+      showToast("Demo cohort restored with sample patients.");
+    }
+
+    function sendQuickDoseReminder() {
+      const p = patients[currentPatientIndex];
+      if (!p) return;
+      const firstMed = (p.medications && p.medications[0]) ? `${p.medications[0].name} (${p.medications[0].dosage})` : 'scheduled medication';
+      const msg = prompt(`Enter dose reminder message to push to ${p.name}'s phone:`, `Reminder from Dr. Henderson: Time to take your ${firstMed} now with a glass of water.`);
+      if (msg) {
+        p.lastReminderSent = new Date().toISOString();
+        savePatients();
+        showToast(`⏰ Immediate Dose Reminder dispatched to ${p.name}'s phone: "${msg.substring(0, 45)}..."`);
       }
     }
 
@@ -786,6 +875,10 @@
         let matchesFilter = true;
         if (currentRiskFilter === 'pending') {
           matchesFilter = p.approvalStatus === 'pending';
+        } else if (currentRiskFilter === 'good') {
+          matchesFilter = (parseInt(p.adherence, 10) || 100) >= 80;
+        } else if (currentRiskFilter === 'attention') {
+          matchesFilter = (parseInt(p.adherence, 10) || 100) < 80 || (p.dosesMissed || 0) > 0;
         } else if (currentRiskFilter !== 'all') {
           matchesFilter = p.riskLevel === currentRiskFilter;
         }
@@ -793,8 +886,9 @@
         if (!matchesSearch || !matchesFilter) return;
 
         const isPending = p.approvalStatus === 'pending';
-        const badgeClass = isPending ? 'badge-pending' : (p.riskLevel === 'high' ? 'badge-high' : p.riskLevel === 'medium' ? 'badge-medium' : 'badge-stable');
-        const badgeLabel = isPending ? 'PENDING' : p.riskLevel.toUpperCase();
+        const isGood = (parseInt(p.adherence, 10) || 100) >= 80;
+        const badgeClass = isPending ? 'badge-pending' : (isGood ? 'badge-stable' : 'badge-high');
+        const badgeLabel = isPending ? 'PENDING' : (isGood ? '🟢 GOOD' : '🔴 ATTENTION');
         const activeClass = idx === currentPatientIndex ? 'active' : '';
 
         const div = document.createElement('div');
@@ -807,8 +901,9 @@
           </div>
           <div class="patient-meta">${p.email || ''} • Age ${p.age} • ${p.conditions[0] || 'Care Monitoring'}</div>
           <div class="patient-sub-stats">
-            <span>BP: ${p.bp.split(' ')[0]}</span>
-            <span>• ${p.adherence} Adherence</span>
+            <span>BP: ${p.bp ? p.bp.split(' ')[0] : '120/80'}</span>
+            <span>• ${p.adherence || '100%'} Adherence</span>
+            <span>• Doses: ${p.dosesTaken || 14}/${(p.dosesTaken || 14) + (p.dosesMissed || 0)}</span>
           </div>
         `;
         list.appendChild(div);
@@ -889,7 +984,24 @@
 
     function renderPatientDetails() {
       const p = patients[currentPatientIndex];
-      if (!p) return;
+      const behCard = document.getElementById('profBehaviorCard');
+
+      if (!p || patients.length === 0) {
+        document.getElementById('profName').innerText = 'No Patients Enrolled';
+        document.getElementById('profMeta').innerText = 'Cohort is clear. Tap "+ Enroll" to onboard real patients and specify their medication doses.';
+        document.getElementById('profBio').innerText = '';
+        document.getElementById('profApprovalCard').innerHTML = '<div style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Clean slate ready for new clinical enrollments.</div>';
+        if (behCard) behCard.style.display = 'none';
+        document.getElementById('profConditions').innerHTML = '';
+        document.getElementById('profAllergies').innerHTML = '';
+        document.getElementById('kpiAdherence').innerText = '0%';
+        document.getElementById('kpiStreak').innerText = 'No Patients';
+        document.getElementById('kpiMedCount').innerText = '0 Meds';
+        document.getElementById('medTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">No active prescriptions. Tap "+ Prescribe New Medication" to add doses.</td></tr>';
+        return;
+      }
+
+      if (behCard) behCard.style.display = 'block';
 
       document.getElementById('profName').innerText = p.name;
       document.getElementById('profMeta').innerHTML = `DOB: ${p.dob} (Age ${p.age}) • Gender: ${p.gender} • Blood Type: <strong>${p.bloodType}</strong>`;
@@ -914,28 +1026,43 @@
         }
       `;
 
+      // Update Behavior Card
+      const adhVal = parseInt(p.adherence, 10) || 100;
+      const isGoodAdh = adhVal >= 80;
+      const behBadge = document.getElementById('profBehaviorBadge');
+      if (behBadge) {
+        behBadge.className = `badge ${isGoodAdh ? 'badge-stable' : 'badge-high'}`;
+        behBadge.innerText = isGoodAdh ? '🟢 GOOD BEHAVIOR' : '🔴 NEEDS ATTENTION';
+      }
+      const statAdh = document.getElementById('profStatAdherence');
+      if (statAdh) statAdh.innerText = `${adhVal}%`;
+      const statTaken = document.getElementById('profStatTaken');
+      if (statTaken) statTaken.innerText = p.dosesTaken !== undefined ? p.dosesTaken : 18;
+      const statMissed = document.getElementById('profStatMissed');
+      if (statMissed) statMissed.innerText = p.dosesMissed !== undefined ? p.dosesMissed : 0;
+
       // Conditions
       const condContainer = document.getElementById('profConditions');
-      condContainer.innerHTML = p.conditions.map(c => `<span class="tag-condition">${c}</span>`).join('');
+      condContainer.innerHTML = (p.conditions || []).map(c => `<span class="tag-condition">${c}</span>`).join('');
 
       // Allergies
       const allgContainer = document.getElementById('profAllergies');
-      allgContainer.innerHTML = p.allergies.map(a => `<span class="tag-allergy">⚠️ ${a}</span>`).join('');
+      allgContainer.innerHTML = (p.allergies || []).map(a => `<span class="tag-allergy">⚠️ ${a}</span>`).join('');
 
       // Caregiver
-      document.getElementById('profCaregiverName').innerText = p.caregiverName;
-      document.getElementById('profCaregiverPhone').innerText = `📞 ${p.caregiverPhone}`;
+      document.getElementById('profCaregiverName').innerText = p.caregiverName || 'Designated Proxy';
+      document.getElementById('profCaregiverPhone').innerText = `📞 ${p.caregiverPhone || 'N/A'}`;
 
       // KPIs & Vitals
-      document.getElementById('kpiAdherence').innerText = p.adherence;
-      document.getElementById('kpiStreak').innerText = p.streak;
-      document.getElementById('kpiMedCount').innerText = `${p.medications.length} Meds`;
-      document.getElementById('valBP').innerText = p.bp;
-      document.getElementById('valBPCat').innerText = p.bpCat;
-      document.getElementById('valGlucose').innerText = p.glucose;
-      document.getElementById('valPulse').innerText = p.pulse;
-      document.getElementById('valWeight').innerText = p.weight.split(' ')[0] + ' kg';
-      document.getElementById('valBMI').innerText = p.bmi;
+      document.getElementById('kpiAdherence').innerText = p.adherence || '100%';
+      document.getElementById('kpiStreak').innerText = p.streak || 'Active Care';
+      document.getElementById('kpiMedCount').innerText = `${(p.medications || []).length} Meds`;
+      document.getElementById('valBP').innerText = p.bp || '120 / 80 mmHg';
+      document.getElementById('valBPCat').innerText = p.bpCat || 'AHA Category: Normal';
+      document.getElementById('valGlucose').innerText = p.glucose || '95 mg/dL';
+      document.getElementById('valPulse').innerText = p.pulse || '72 BPM';
+      document.getElementById('valWeight').innerText = (p.weight || '70 kg').split(' ')[0] + ' kg';
+      document.getElementById('valBMI').innerText = p.bmi || 'BMI 24.2';
 
       // Drug Interaction box toggle
       const alertBox = document.getElementById('interactionAlertBox');
@@ -944,23 +1071,28 @@
       // Prescriptions Table
       const tbody = document.getElementById('medTableBody');
       tbody.innerHTML = '';
-      document.getElementById('activePrescriptionCount').innerText = `(${p.medications.length} Active)`;
+      const medList = p.medications || [];
+      document.getElementById('activePrescriptionCount').innerText = `(${medList.length} Active)`;
 
-      p.medications.forEach(m => {
-        const stockStyle = m.stock <= 7 ? 'color:#b91c1c; font-weight:800;' : 'font-weight:700;';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${m.name}</strong> <span class="med-badge">${m.form}</span><div style="font-size:11px; color:var(--muted);">${m.instructions}</div></td>
-          <td><strong style="color:var(--primary);">${m.dosage}</strong></td>
-          <td>${m.times}</td>
-          <td><span style="${stockStyle}">${m.stock} left</span></td>
-          <td class="actions-cell">
-            <button class="btn btn-outline btn-sm" onclick="openAdjustDosageModal('${m.id}')">✏️ Adjust Dose</button>
-            <button class="btn btn-danger btn-sm" onclick="discontinueMedication('${m.id}')">🛑 Discontinue</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+      if (medList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--muted);">No medications prescribed yet. Tap "+ Prescribe New Medication" to add a dose.</td></tr>';
+      } else {
+        medList.forEach(m => {
+          const stockStyle = m.stock <= 7 ? 'color:#b91c1c; font-weight:800;' : 'font-weight:700;';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${m.name}</strong> <span class="med-badge">${m.form}</span><div style="font-size:11px; color:var(--muted);">${m.instructions}</div></td>
+            <td><strong style="color:var(--primary);">${m.dosage}</strong></td>
+            <td>${m.times}</td>
+            <td><span style="${stockStyle}">${m.stock} left</span></td>
+            <td class="actions-cell">
+              <button class="btn btn-outline btn-sm" onclick="openAdjustDosageModal('${m.id}')">✏️ Adjust Dose</button>
+              <button class="btn btn-danger btn-sm" onclick="discontinueMedication('${m.id}')">🛑 Discontinue</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
     }
 
     // Modal: Enroll New Patient
@@ -970,6 +1102,9 @@
       document.getElementById('enrollPhone').value = '';
       document.getElementById('enrollCaregiverName').value = '';
       document.getElementById('enrollCaregiverPhone').value = '';
+      if (document.getElementById('enrollMedName')) document.getElementById('enrollMedName').value = '';
+      if (document.getElementById('enrollMedDosage')) document.getElementById('enrollMedDosage').value = '';
+      if (document.getElementById('enrollMedTimes')) document.getElementById('enrollMedTimes').value = '08:00, 20:00';
       document.getElementById('enrollPatientModal').style.display = 'flex';
     }
 
@@ -993,6 +1128,10 @@
       const riskLevel = document.getElementById('enrollRisk').value;
       const preApprove = document.getElementById('enrollPreApprove').checked;
 
+      const medName = document.getElementById('enrollMedName') ? document.getElementById('enrollMedName').value.trim() : '';
+      const medDosage = document.getElementById('enrollMedDosage') ? document.getElementById('enrollMedDosage').value.trim() : '';
+      const medTimes = document.getElementById('enrollMedTimes') ? document.getElementById('enrollMedTimes').value.trim() || '08:00, 20:00' : '08:00, 20:00';
+
       if (!name || !email) {
         alert('Please enter patient full legal name and account email address.');
         return;
@@ -1000,6 +1139,19 @@
 
       const birthYear = parseInt(dob.split('-')[0], 10) || 1982;
       const age = Math.max(1, new Date().getFullYear() - birthYear);
+
+      const initialMeds = [];
+      if (medName && medDosage) {
+        initialMeds.push({
+          id: `m-${Date.now()}`,
+          name: medName,
+          dosage: medDosage,
+          form: 'Tablet',
+          times: medTimes,
+          stock: 60,
+          instructions: 'Take as directed by physician'
+        });
+      }
 
       const newPat = {
         id: `pat-${Date.now()}`,
@@ -1021,6 +1173,8 @@
         approvedBy: preApprove ? 'Dr. Robert Henderson, M.D.' : undefined,
         registeredAt: new Date().toISOString(),
         adherence: "100%",
+        dosesTaken: 0,
+        dosesMissed: 0,
         streak: "New Patient (Active)",
         bp: "120 / 80 mmHg",
         bpCat: "AHA Category: Normal",
@@ -1028,7 +1182,7 @@
         pulse: "72 BPM",
         caregiverName,
         caregiverPhone,
-        medications: []
+        medications: initialMeds
       };
 
       patients.unshift(newPat);
@@ -1037,7 +1191,7 @@
       closeEnrollPatientModal();
       renderSidebar();
       renderPatientDetails();
-      showToast(`✓ Patient ${name} enrolled successfully with ${newPat.approvalStatus === 'approved' ? 'Active Login Access' : 'Pending Status'}.`);
+      showToast(`✓ Patient ${name} enrolled successfully with ${newPat.approvalStatus === 'approved' ? 'Active Login Access' : 'Pending Status'}.${initialMeds.length > 0 ? ` Prescribed starting dose of ${medName} (${medDosage}).` : ''}`);
 
       if (supabaseClient) {
         supabaseClient.from('patient_profiles').insert({

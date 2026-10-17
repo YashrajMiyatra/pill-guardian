@@ -4,6 +4,7 @@ export type MedicationFrequency = 'daily' | 'twice_daily' | 'three_times' | 'as_
 
 export interface Medication {
   id: string;
+  patientId?: string; // Links medication directly to a specific patient
   name: string;
   dosage: string; // e.g. "20 mg", "500 mg"
   form: MedicationForm;
@@ -25,6 +26,7 @@ export type DoseStatus = 'pending' | 'taken' | 'skipped';
 
 export interface DoseItem {
   id: string; // Unique id for the dose slot
+  patientId?: string;
   medicationId: string;
   medicationName: string;
   dosage: string;
@@ -42,6 +44,7 @@ export type VitalType = 'blood_pressure' | 'blood_glucose' | 'heart_rate' | 'wei
 
 export interface VitalLog {
   id: string;
+  patientId?: string;
   type: VitalType;
   value: {
     systolic?: number;
@@ -82,6 +85,7 @@ export interface UserProfile {
 export type ActiveTab = 'today' | 'cabinet' | 'vitals' | 'caregiver';
 
 export type PatientApprovalStatus = 'approved' | 'pending' | 'rejected';
+export type PatientBehaviorRating = 'good' | 'fair' | 'poor';
 
 export interface PatientAccount {
   id: string;
@@ -98,6 +102,10 @@ export interface PatientAccount {
   allergies: string[];
   riskLevel: 'high' | 'medium' | 'stable';
   adherenceRate: number;
+  behaviorRating?: PatientBehaviorRating; // 'good' (>=85%), 'fair' (60-84%), 'poor' (<60%)
+  dosesTakenCount?: number;
+  dosesMissedCount?: number;
+  lastDoseTime?: string;
   latestBP: string;
   latestGlucose: string;
   phone: string;
@@ -108,4 +116,17 @@ export interface PatientAccount {
   approvedBy?: string;
   registeredAt: string;
   notes?: string;
+  lastReminderSent?: string;
+}
+
+export interface DoseReminder {
+  id: string;
+  patientId: string;
+  patientName: string;
+  medicationName: string;
+  dosage: string;
+  scheduledTime: string;
+  sentAt: string;
+  message: string;
+  acknowledged?: boolean;
 }
