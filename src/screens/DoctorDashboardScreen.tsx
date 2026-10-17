@@ -34,6 +34,9 @@ import {
   HeartPulse,
   LogOut,
   ShieldCheck,
+  DollarSign,
+  Sparkles,
+  ClipboardList,
 } from 'lucide-react-native';
 import { Medication, VitalLog, UserProfile, CaregiverContact, DoseItem } from '../types';
 import { StorageService } from '../services/storage';
@@ -41,6 +44,8 @@ import { ReportGeneratorService } from '../services/reportGenerator';
 import { InteractionCheckerService, DrugInteractionAlert } from '../services/interactionChecker';
 import { useAuth } from '../context/AuthContext';
 import { Colors } from '../theme/colors';
+
+type DoctorTab = 'patients' | 'rx' | 'vitals' | 'orders';
 
 interface PatientRecord {
   id: string;
@@ -51,6 +56,7 @@ interface PatientRecord {
   bloodType: string;
   weight: string;
   height: string;
+  bmi: string;
   conditions: string[];
   allergies: string[];
   riskLevel: 'high' | 'medium' | 'stable';
@@ -72,6 +78,7 @@ const SAMPLE_PATIENTS: PatientRecord[] = [
     bloodType: 'O+',
     weight: '84 kg (185 lbs)',
     height: '178 cm (5 ft 10 in)',
+    bmi: '26.5 (Overweight I)',
     conditions: ['Type 2 Diabetes', 'Essential Hypertension', 'Mild Persistent Asthma'],
     allergies: ['Penicillin (Anaphylaxis)', 'Sulfa Drugs (Rash)'],
     riskLevel: 'medium',
@@ -91,6 +98,7 @@ const SAMPLE_PATIENTS: PatientRecord[] = [
     bloodType: 'A-',
     weight: '62 kg (136 lbs)',
     height: '162 cm (5 ft 4 in)',
+    bmi: '23.6 (Normal)',
     conditions: ['Congestive Heart Failure', 'Atrial Fibrillation', 'CKD Stage 2'],
     allergies: ['Aspirin (GI Bleeding)', 'ACE Inhibitors (Severe Cough)'],
     riskLevel: 'high',
@@ -110,6 +118,7 @@ const SAMPLE_PATIENTS: PatientRecord[] = [
     bloodType: 'B+',
     weight: '91 kg (200 lbs)',
     height: '183 cm (6 ft 0 in)',
+    bmi: '27.2 (Overweight I)',
     conditions: ['Hypertension', 'Hyperlipidemia', 'Pre-diabetes'],
     allergies: ['No Known Drug Allergies (NKDA)'],
     riskLevel: 'stable',
@@ -122,8 +131,16 @@ const SAMPLE_PATIENTS: PatientRecord[] = [
   },
 ];
 
+const CLINICAL_PRESETS = [
+  'Titrate Lisinopril to 20mg PO daily for systolic control. Re-check BP in 7 days.',
+  'Order Fasting Metabolic Panel (HbA1c, BUN, Serum Creatinine, eGFR).',
+  'Restrict dietary sodium to <2,000 mg/day and log morning weights.',
+  'Schedule 14-day Telehealth RPM follow-up with cardiology team.',
+];
+
 export const DoctorDashboardScreen: React.FC = () => {
-  const { user, switchRole, signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<DoctorTab>('patients');
   const [selectedPatientId, setSelectedPatientId] = useState<string>('pat-1');
   const [patientSearch, setPatientSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState<'all' | 'high' | 'medium' | 'stable'>('all');
@@ -136,12 +153,12 @@ export const DoctorDashboardScreen: React.FC = () => {
   const [doses, setDoses] = useState<DoseItem[]>([]);
   const [interactionAlerts, setInteractionAlerts] = useState<DrugInteractionAlert[]>([]);
 
-  // Modal States for Prescriptions
+  // Prescription Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [selectedMedForAdjust, setSelectedMedForAdjust] = useState<Medication | null>(null);
 
-  // New Prescription Form Fields
+  // New Prescription Form
   const [newMedName, setNewMedName] = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
   const [newMedInstructions, setNewMedInstructions] = useState('');
@@ -149,7 +166,7 @@ export const DoctorDashboardScreen: React.FC = () => {
   const [newMedStock, setNewMedStock] = useState('60');
   const [newMedForm, setNewMedForm] = useState<'tablet' | 'capsule' | 'injection' | 'inhaler'>('tablet');
 
-  // Adjust Prescription Form Fields
+  // Adjust Form
   const [adjustedDosage, setAdjustedDosage] = useState('');
   const [adjustedInstructions, setAdjustedInstructions] = useState('');
 
@@ -213,9 +230,9 @@ export const DoctorDashboardScreen: React.FC = () => {
       setIsAdjustModalOpen(false);
       Alert.alert(
         'Prescription Updated',
-        `Successfully updated ${selectedMedForAdjust.name} to ${adjustedDosage.trim()} for ${selectedPatient.name}. Daily dose schedule synchronized.`
+        `Updated ${selectedMedForAdjust.name} to ${adjustedDosage.trim()} for ${selectedPatient.name}. Schedule updated.`
       );
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Could not update prescription.');
     }
   };
@@ -224,7 +241,7 @@ export const DoctorDashboardScreen: React.FC = () => {
   const handleDiscontinueMedication = (med: Medication) => {
     Alert.alert(
       'Discontinue Prescription',
-      `Are you sure you want to discontinue ${med.name} (${med.dosage}) for ${selectedPatient.name}?`,
+      `Discontinue ${med.name} (${med.dosage}) for ${selectedPatient.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -234,10 +251,7 @@ export const DoctorDashboardScreen: React.FC = () => {
             try {
               await StorageService.discontinueMedication(med.id);
               await loadPatientData();
-              Alert.alert(
-                'Prescription Discontinued',
-                `${med.name} has been removed from active prescriptions.`
-              );
+              Alert.alert('Prescription Discontinued', `${med.name} discontinued from active regimen.`);
             } catch {
               Alert.alert('Error', 'Could not discontinue medication.');
             }
@@ -250,7 +264,7 @@ export const DoctorDashboardScreen: React.FC = () => {
   // Doctor adds new prescription
   const handleSaveNewMedication = async () => {
     if (!newMedName.trim() || !newMedDosage.trim()) {
-      Alert.alert('Required Fields', 'Please enter both medication name and dosage.');
+      Alert.alert('Required Fields', 'Please enter medication name and dosage.');
       return;
     }
 
@@ -270,7 +284,7 @@ export const DoctorDashboardScreen: React.FC = () => {
       times: timesArray.length > 0 ? timesArray : ['08:00'],
       stockCurrent: parseInt(newMedStock, 10) || 30,
       stockRefillAlert: 7,
-      prescribedBy: 'Dr. Robert Henderson, M.D.',
+      prescribedBy: user?.fullName || 'Dr. Robert Henderson, M.D.',
       rxNumber: `RX-${Math.floor(100000 + Math.random() * 900000)}`,
       pharmacyName: 'Metro Care Pharmacy',
       pharmacyPhone: '(555) 831-2900',
@@ -285,7 +299,6 @@ export const DoctorDashboardScreen: React.FC = () => {
       await loadPatientData();
       setIsAddModalOpen(false);
 
-      // Reset form
       setNewMedName('');
       setNewMedDosage('');
       setNewMedInstructions('');
@@ -293,8 +306,8 @@ export const DoctorDashboardScreen: React.FC = () => {
       setNewMedStock('60');
 
       Alert.alert(
-        'Prescription Added',
-        `New prescription for ${newMed.name} ${newMed.dosage} prescribed to ${selectedPatient.name}. Schedule updated.`
+        'Prescription Authorized',
+        `Prescription for ${newMed.name} (${newMed.dosage}) added to ${selectedPatient.name}'s regimen.`
       );
     } catch {
       Alert.alert('Error', 'Could not add prescription.');
@@ -308,7 +321,7 @@ export const DoctorDashboardScreen: React.FC = () => {
     }
     Alert.alert(
       'Directive Dispatched',
-      `Clinical message sent directly to ${selectedPatient.name}'s PillGuardian mobile app:\n\n"${doctorNote.trim()}"`
+      `Clinical order sent directly to ${selectedPatient.name}'s phone:\n\n"${doctorNote.trim()}"`
     );
     setDoctorNote('');
   };
@@ -332,436 +345,459 @@ export const DoctorDashboardScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Clinician Portal Header */}
-      <View style={styles.portalHeader}>
-        <View style={styles.headerLeft}>
-          <View style={styles.doctorBadge}>
-            <Stethoscope size={22} color="#0D9488" />
+    <View style={styles.screenWrapper}>
+      {/* Doctor Top Clinical Header */}
+      <View style={styles.docHeader}>
+        <View style={styles.docHeaderLeft}>
+          <View style={styles.stethoscopeBadge}>
+            <Stethoscope size={20} color="#0D9488" />
           </View>
-          <View style={{ marginLeft: 12, flex: 1 }}>
-            <Text style={styles.portalSub}>PHYSICIAN CARE PORTAL • ACTIVE</Text>
-            <Text style={styles.doctorName}>Dr. Robert Henderson, M.D.</Text>
-            <Text style={styles.hospitalText}>Metropolitan Medical Center • Cardiology RPM</Text>
+          <View style={{ marginLeft: 10, flex: 1 }}>
+            <Text style={styles.brandMD}>PILLGUARDIAN MD • CLINICAL WORKSTATION</Text>
+            <Text style={styles.physicianName}>{user?.fullName || 'Dr. Robert Henderson, M.D.'}</Text>
+            <Text style={styles.hospitalAffiliation}>Metropolitan Heart & Chronic Care • NPI #1982736410</Text>
           </View>
         </View>
 
-        <View style={styles.headerActionRow}>
-          <TouchableOpacity
-            style={styles.switchRoleBtn}
-            onPress={() => switchRole('patient')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.switchRoleText}>Exit to Patient View</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.signOutHeaderBtn}
-            onPress={signOut}
-            activeOpacity={0.8}
-          >
-            <LogOut size={13} color="#DC2626" />
-            <Text style={styles.signOutHeaderText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.signOutDocBtn} onPress={signOut} activeOpacity={0.8}>
+          <LogOut size={13} color="#DC2626" />
+          <Text style={styles.signOutDocText}>Sign Out</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* RPM Metric KPI Row */}
-      <View style={styles.kpiRow}>
-        <View style={styles.kpiCard}>
-          <Text style={styles.kpiNumber}>48</Text>
-          <Text style={styles.kpiLabel}>Active Patients</Text>
-        </View>
-        <View style={[styles.kpiCard, styles.kpiCardWarning]}>
-          <Text style={[styles.kpiNumber, { color: '#B45309' }]}>3</Text>
-          <Text style={styles.kpiLabel}>Critical BP Spikes</Text>
-        </View>
-        <View style={styles.kpiCard}>
-          <Text style={[styles.kpiNumber, { color: '#15803D' }]}>91%</Text>
-          <Text style={styles.kpiLabel}>Cohort Adherence</Text>
-        </View>
+      {/* Patient Active Bar */}
+      <View style={styles.activePatientBar}>
+        <Text style={styles.activePatientLabel}>CURRENT PATIENT:</Text>
+        <Text style={styles.activePatientName}>{selectedPatient.name}</Text>
+        <Text style={styles.activePatientMeta}>
+          ({selectedPatient.age}y {selectedPatient.gender.charAt(0)} • {selectedPatient.conditions[0]})
+        </Text>
       </View>
 
-      {/* Patient Search & Roster Selector */}
-      <View style={styles.rosterSection}>
-        <Text style={styles.sectionHeading}>Patient Roster & Monitoring Queue</Text>
-        <View style={styles.searchBar}>
-          <Search size={16} color="#94A3B8" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search patient name, condition, or age..."
-            placeholderTextColor="#94A3B8"
-            value={patientSearch}
-            onChangeText={setPatientSearch}
-          />
-        </View>
-
-        {/* Risk Filter Chips */}
-        <View style={styles.chipRow}>
-          {(['all', 'high', 'medium', 'stable'] as const).map(f => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.filterChip, riskFilter === f && styles.filterChipActive]}
-              onPress={() => setRiskFilter(f)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  riskFilter === f && styles.filterChipTextActive,
-                ]}
-              >
-                {f.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Horizontal Patient Cards */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.patientScroll}>
-          {filteredPatients.map(pat => {
-            const isSelected = pat.id === selectedPatientId;
-            const isHigh = pat.riskLevel === 'high';
-            const isMed = pat.riskLevel === 'medium';
-            return (
-              <TouchableOpacity
-                key={pat.id}
-                style={[styles.patientCard, isSelected && styles.patientCardSelected]}
-                onPress={() => setSelectedPatientId(pat.id)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.patientCardTop}>
-                  <Text style={styles.cardPatientName}>{pat.name}</Text>
-                  <View
-                    style={[
-                      styles.riskBadge,
-                      isHigh
-                        ? styles.riskBadgeHigh
-                        : isMed
-                        ? styles.riskBadgeMed
-                        : styles.riskBadgeStable,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.riskBadgeText,
-                        isHigh
-                          ? styles.riskBadgeTextHigh
-                          : isMed
-                          ? styles.riskBadgeTextMed
-                          : styles.riskBadgeTextStable,
-                      ]}
-                    >
-                      {pat.riskLevel.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.cardPatientMeta}>Age {pat.age} • {pat.conditions[0]}</Text>
-                <View style={styles.adherenceMiniRow}>
-                  <Activity size={12} color="#0284C7" />
-                  <Text style={styles.adherenceMiniText}>
-                    BP: {pat.latestBP} • {pat.adherenceRate}% Adherence
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* Selected Patient Detailed Profile Dossier */}
-      <View style={styles.detailContainer}>
-        {/* Patient Identity Card */}
-        <View style={styles.patientIdCard}>
-          <View style={styles.patientIdTop}>
-            <View>
-              <Text style={styles.patientIdName}>{selectedPatient.name}</Text>
-              <Text style={styles.patientIdDob}>
-                DOB: {selectedPatient.dob} ({selectedPatient.age} yrs) • {selectedPatient.gender} • Blood Type: {selectedPatient.bloodType}
-              </Text>
-              <Text style={styles.patientIdBio}>
-                Height: {selectedPatient.height} • Weight: {selectedPatient.weight}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.exportDossierBtn}
-              onPress={handleExportAuditPDF}
-              disabled={isExporting}
-              activeOpacity={0.8}
-            >
-              {isExporting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <FileDown size={14} color="#FFFFFF" />
-                  <Text style={styles.exportDossierText}>Export PDF</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Chronic Diagnoses Tags */}
-          <View style={styles.diagnosisContainer}>
-            <Text style={styles.diagnosisLabel}>DIAGNOSED CONDITIONS:</Text>
-            <View style={styles.tagWrap}>
-              {selectedPatient.conditions.map((cond, idx) => (
-                <View key={idx} style={styles.conditionTag}>
-                  <Text style={styles.conditionTagText}>{cond}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Known Allergies Warning */}
-          <View style={styles.allergyContainer}>
-            <Text style={styles.allergyLabel}>KNOWN DRUG ALLERGIES:</Text>
-            <View style={styles.tagWrap}>
-              {selectedPatient.allergies.map((allg, idx) => (
-                <View key={idx} style={styles.allergyTag}>
-                  <ShieldAlert size={12} color="#B91C1C" />
-                  <Text style={styles.allergyTagText}>{allg}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Emergency & Caregiver Contact */}
-          <View style={styles.contactMiniRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.contactMiniLabel}>Primary Caregiver / Proxy:</Text>
-              <Text style={styles.contactMiniName}>
-                {selectedPatient.caregiverName} ({selectedPatient.caregiverPhone})
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.callCaregiverBtn}
-              onPress={() => Linking.openURL(`tel:${selectedPatient.caregiverPhone}`)}
-            >
-              <Phone size={13} color="#0D9488" />
-              <Text style={styles.callCaregiverBtnText}>Call Caregiver</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Drug Interactions Safety Alert for Clinician */}
-        {interactionAlerts.length > 0 && (
-          <View style={styles.clinicianAlertBox}>
-            <View style={styles.alertTop}>
-              <ShieldAlert size={18} color="#B91C1C" />
-              <Text style={styles.alertHeading}>Clinical Drug Interaction Alert</Text>
-            </View>
-            {interactionAlerts.map(alert => (
-              <View key={alert.id} style={{ marginTop: 6 }}>
-                <Text style={styles.alertDrugs}>
-                  ⚠️ {alert.medicationA} ↔ {alert.medicationB}
-                </Text>
-                <Text style={styles.alertDetail}>{alert.description}</Text>
-                <Text style={styles.alertAdvice}>Clinical Directive: {alert.clinicalAdvice}</Text>
+      {/* Main Content Area */}
+      <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
+        {/* TAB 1: PATIENTS & COHORT */}
+        {activeTab === 'patients' && (
+          <View style={styles.tabContent}>
+            {/* KPI Cards */}
+            <View style={styles.kpiRow}>
+              <View style={styles.kpiCard}>
+                <Text style={styles.kpiNumber}>48</Text>
+                <Text style={styles.kpiLabel}>Enrolled Patients</Text>
               </View>
-            ))}
+              <View style={[styles.kpiCard, styles.kpiCardWarning]}>
+                <Text style={[styles.kpiNumber, { color: '#B45309' }]}>3</Text>
+                <Text style={styles.kpiLabel}>Critical BP Spikes</Text>
+              </View>
+              <View style={styles.kpiCard}>
+                <Text style={[styles.kpiNumber, { color: '#15803D' }]}>91%</Text>
+                <Text style={styles.kpiLabel}>Cohort Adherence</Text>
+              </View>
+            </View>
+
+            {/* Roster & Search */}
+            <View style={styles.searchBar}>
+              <Search size={15} color="#94A3B8" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search patient name, condition..."
+                placeholderTextColor="#94A3B8"
+                value={patientSearch}
+                onChangeText={setPatientSearch}
+              />
+            </View>
+
+            {/* Risk Chips */}
+            <View style={styles.chipRow}>
+              {(['all', 'high', 'medium', 'stable'] as const).map(f => (
+                <TouchableOpacity
+                  key={f}
+                  style={[styles.filterChip, riskFilter === f && styles.filterChipActive]}
+                  onPress={() => setRiskFilter(f)}
+                >
+                  <Text style={[styles.filterChipText, riskFilter === f && styles.filterChipTextActive]}>
+                    {f.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Horizontal Patient Cards */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.patientScroll}>
+              {filteredPatients.map(pat => {
+                const isSelected = pat.id === selectedPatientId;
+                const isHigh = pat.riskLevel === 'high';
+                const isMed = pat.riskLevel === 'medium';
+                return (
+                  <TouchableOpacity
+                    key={pat.id}
+                    style={[styles.patientCard, isSelected && styles.patientCardSelected]}
+                    onPress={() => setSelectedPatientId(pat.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.patientCardTop}>
+                      <Text style={styles.cardPatientName}>{pat.name}</Text>
+                      <View
+                        style={[
+                          styles.riskBadge,
+                          isHigh ? styles.riskBadgeHigh : isMed ? styles.riskBadgeMed : styles.riskBadgeStable,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.riskBadgeText,
+                            isHigh ? styles.riskBadgeTextHigh : isMed ? styles.riskBadgeTextMed : styles.riskBadgeTextStable,
+                          ]}
+                        >
+                          {pat.riskLevel.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.cardPatientMeta}>Age {pat.age} • {pat.conditions[0]}</Text>
+                    <Text style={styles.cardPatientSub}>BP: {pat.latestBP} • {pat.adherenceRate}% Adherence</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Comprehensive Patient Dossier Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeaderRow}>
+                <Text style={styles.cardTitle}>Patient Medical Profile</Text>
+                <TouchableOpacity style={styles.exportBtnSmall} onPress={handleExportAuditPDF}>
+                  <FileDown size={13} color="#FFFFFF" />
+                  <Text style={styles.exportBtnSmallText}>Export PDF</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.dossierName}>{selectedPatient.name}</Text>
+              <Text style={styles.dossierMeta}>
+                DOB: {selectedPatient.dob} ({selectedPatient.age}y) • {selectedPatient.gender} • Blood Type: {selectedPatient.bloodType}
+              </Text>
+              <Text style={styles.dossierBio}>
+                Height: {selectedPatient.height} • Weight: {selectedPatient.weight} • BMI: {selectedPatient.bmi}
+              </Text>
+
+              {/* Diagnoses */}
+              <Text style={styles.sectionSubLabel}>DIAGNOSED CONDITIONS:</Text>
+              <View style={styles.tagWrap}>
+                {selectedPatient.conditions.map((cond, i) => (
+                  <View key={i} style={styles.condTag}>
+                    <Text style={styles.condTagText}>{cond}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Allergies */}
+              <Text style={[styles.sectionSubLabel, { color: '#B91C1C', marginTop: 10 }]}>CRITICAL DRUG ALLERGIES:</Text>
+              <View style={styles.tagWrap}>
+                {selectedPatient.allergies.map((allg, i) => (
+                  <View key={i} style={styles.allgTag}>
+                    <ShieldAlert size={12} color="#B91C1C" />
+                    <Text style={styles.allgTagText}>{allg}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Caregiver */}
+              <View style={styles.caregiverRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.caregiverLabel}>Designated Proxy / Caregiver:</Text>
+                  <Text style={styles.caregiverName}>{selectedPatient.caregiverName}</Text>
+                  <Text style={styles.caregiverPhone}>{selectedPatient.caregiverPhone}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.callProxyBtn}
+                  onPress={() => Linking.openURL(`tel:${selectedPatient.caregiverPhone}`)}
+                >
+                  <Phone size={13} color="#0D9488" />
+                  <Text style={styles.callProxyText}>Call Caregiver</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         )}
 
-        {/* Prescription Regimen Section (Doctor can Add, Edit, Discontinue) */}
-        <View style={styles.sectionCard}>
-          <View style={styles.prescriptionsHeaderRow}>
-            <View>
-              <Text style={styles.cardHeading}>Active Prescription Regimen</Text>
-              <Text style={styles.cardSubheading}>
-                Manage medications, adjust dosages, or issue new prescriptions
-              </Text>
+        {/* TAB 2: RX PAD & PRESCRIPTIONS */}
+        {activeTab === 'rx' && (
+          <View style={styles.tabContent}>
+            {/* Drug Interaction Alert */}
+            {interactionAlerts.length > 0 && (
+              <View style={styles.alertBox}>
+                <View style={styles.alertTop}>
+                  <ShieldAlert size={16} color="#B91C1C" />
+                  <Text style={styles.alertTitle}>Clinical Drug-Drug Interaction Warning</Text>
+                </View>
+                {interactionAlerts.map(alert => (
+                  <View key={alert.id} style={{ marginTop: 4 }}>
+                    <Text style={styles.alertDrugs}>⚠️ {alert.medicationA} ↔ {alert.medicationB}</Text>
+                    <Text style={styles.alertDesc}>{alert.description}</Text>
+                    <Text style={styles.alertAdvice}>Directive: {alert.clinicalAdvice}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Prescription Regimen Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeaderRow}>
+                <View>
+                  <Text style={styles.cardTitle}>Active Prescriptions ({activeMeds.filter(m => m.isActive).length})</Text>
+                  <Text style={styles.cardSub}>Authorized medications for {selectedPatient.name}</Text>
+                </View>
+                <TouchableOpacity style={styles.addRxBtn} onPress={() => setIsAddModalOpen(true)}>
+                  <Plus size={14} color="#FFFFFF" />
+                  <Text style={styles.addRxBtnText}>+ Prescribe</Text>
+                </TouchableOpacity>
+              </View>
+
+              {activeMeds.filter(m => m.isActive).map(med => (
+                <View key={med.id} style={styles.medItem}>
+                  <View style={styles.medItemTop}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.medItemName}>
+                        {med.name} <Text style={styles.medItemDosage}>({med.dosage})</Text>
+                      </Text>
+                      <Text style={styles.medItemInstructions}>{med.instructions}</Text>
+                      <Text style={styles.medItemTimes}>Times: {med.times.join(' • ')} • Form: {med.form}</Text>
+                    </View>
+                    <View style={styles.stockBadge}>
+                      <Text style={styles.stockBadgeText}>{med.stockCurrent} in stock {med.stockCurrent <= 7 ? '🔴' : '🟢'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.medItemActions}>
+                    <TouchableOpacity style={styles.adjustBtn} onPress={() => handleOpenAdjustModal(med)}>
+                      <Edit3 size={13} color="#0284C7" />
+                      <Text style={styles.adjustBtnText}>Adjust Dosage</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.discontinueBtn} onPress={() => handleDiscontinueMedication(med)}>
+                      <Trash2 size={13} color="#DC2626" />
+                      <Text style={styles.discontinueBtnText}>Discontinue</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+
+              <View style={styles.ePrescribeSignature}>
+                <ShieldCheck size={14} color="#0D9488" />
+                <Text style={styles.ePrescribeText}>
+                  Digitally Authorized by {user?.fullName || 'Dr. Robert Henderson, M.D.'} • E-Prescribe Certified
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* TAB 3: RPM VITALS & REIMBURSEMENT */}
+        {activeTab === 'vitals' && (
+          <View style={styles.tabContent}>
+            {/* Vitals Overview */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Real-time Biomarkers & Vitals</Text>
+              <Text style={styles.cardSub}>Continuous remote transmissions from {selectedPatient.name}</Text>
+
+              <View style={styles.vitalsGrid}>
+                <View style={styles.vitalCard}>
+                  <Text style={styles.vitalLabel}>Blood Pressure</Text>
+                  <Text style={styles.vitalValue}>{selectedPatient.latestBP}</Text>
+                  <Text style={styles.vitalSub}>AHA Category: Optimal</Text>
+                </View>
+                <View style={styles.vitalCard}>
+                  <Text style={styles.vitalLabel}>Blood Glucose</Text>
+                  <Text style={styles.vitalValue}>{selectedPatient.latestGlucose}</Text>
+                  <Text style={styles.vitalSub}>ADA Fasting Target</Text>
+                </View>
+              </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.addPrescriptionBtn}
-              onPress={() => setIsAddModalOpen(true)}
-              activeOpacity={0.8}
-            >
-              <Plus size={14} color="#FFFFFF" />
-              <Text style={styles.addPrescriptionBtnText}>Add Prescription</Text>
-            </TouchableOpacity>
-          </View>
+            {/* Medicare RPM Reimbursement Compliance */}
+            <View style={styles.card}>
+              <View style={styles.cardHeaderRow}>
+                <Text style={styles.cardTitle}>Medicare RPM Billing Tracker</Text>
+                <View style={styles.rpmQualifyBadge}>
+                  <DollarSign size={12} color="#15803D" />
+                  <Text style={styles.rpmQualifyText}>QUALIFIED</Text>
+                </View>
+              </View>
+              <Text style={styles.cardSub}>CMS Remote Patient Monitoring Compliance for {selectedPatient.name}</Text>
 
-          {activeMeds.filter(m => m.isActive).map(med => (
-            <View key={med.id} style={styles.medCardInteractive}>
-              <View style={styles.medCardTop}>
+              <View style={styles.cptRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.medCardName}>
-                    {med.name} <Text style={styles.medCardDosage}>({med.dosage})</Text>
-                  </Text>
-                  <Text style={styles.medCardInstructions}>{med.instructions}</Text>
-                  <Text style={styles.medCardTimes}>
-                    Schedule: {med.times.join(' • ')} | Form: {med.form}
-                  </Text>
+                  <Text style={styles.cptCode}>CPT 99453 — Initial RPM Setup</Text>
+                  <Text style={styles.cptDesc}>Device onboarding & patient training ($19.20)</Text>
                 </View>
-
-                <View style={styles.stockCol}>
-                  <Text style={styles.stockText}>
-                    {med.stockCurrent} in stock {med.stockCurrent <= med.stockRefillAlert ? '🔴' : '🟢'}
-                  </Text>
-                </View>
+                <Text style={styles.cptStatus}>✓ Billed</Text>
               </View>
 
-              {/* Action Buttons for Physician */}
-              <View style={styles.medActionsRow}>
-                <TouchableOpacity
-                  style={styles.adjustDoseBtn}
-                  onPress={() => handleOpenAdjustModal(med)}
-                  activeOpacity={0.8}
-                >
-                  <Edit3 size={13} color="#0284C7" />
-                  <Text style={styles.adjustDoseBtnText}>Adjust Dosage</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.discontinueBtn}
-                  onPress={() => handleDiscontinueMedication(med)}
-                  activeOpacity={0.8}
-                >
-                  <Trash2 size={13} color="#DC2626" />
-                  <Text style={styles.discontinueBtnText}>Discontinue</Text>
-                </TouchableOpacity>
+              <View style={styles.cptRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cptCode}>CPT 99454 — 16+ Days Transmissions</Text>
+                  <Text style={styles.cptDesc}>21 / 30 transmission days completed ($48.80)</Text>
+                </View>
+                <Text style={styles.cptStatusActive}>✓ Qualified</Text>
               </View>
-            </View>
-          ))}
-        </View>
 
-        {/* Recent Vitals & Clinical Biomarkers */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.cardHeading}>Biomarkers & Vitals Monitoring</Text>
-          <View style={styles.vitalsGrid}>
-            <View style={styles.vitalBox}>
-              <Text style={styles.vitalBoxLabel}>Latest Blood Pressure</Text>
-              <Text style={styles.vitalBoxValue}>{selectedPatient.latestBP}</Text>
-              <Text style={styles.vitalBoxSub}>Target: &lt;120/80 mmHg (AHA Class I)</Text>
-            </View>
-            <View style={styles.vitalBox}>
-              <Text style={styles.vitalBoxLabel}>Blood Glucose</Text>
-              <Text style={styles.vitalBoxValue}>{selectedPatient.latestGlucose}</Text>
-              <Text style={styles.vitalBoxSub}>Fasting Target: 80-130 mg/dL</Text>
+              <View style={styles.cptRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cptCode}>CPT 99457 — Clinical RPM Management</Text>
+                  <Text style={styles.cptDesc}>24 / 20 minutes clinical staff review ($51.40)</Text>
+                </View>
+                <Text style={styles.cptStatusActive}>✓ Qualified</Text>
+              </View>
+
+              <View style={styles.rpmTotalCard}>
+                <Text style={styles.rpmTotalLabel}>Est. Monthly Practice Revenue per Patient:</Text>
+                <Text style={styles.rpmTotalAmount}>$119.40 / month</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
-        {/* Clinical Directives & Messages */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.cardHeading}>Send Direct Medical Directive to Patient App</Text>
-          <Text style={styles.cardSubheading}>
-            Orders and clinical notes sent here trigger push alerts on the patient's device
-          </Text>
-          <TextInput
-            style={styles.directiveInput}
-            placeholder="e.g. Increase Lisinopril to 20mg daily due to elevated systolic BP. Re-check in 7 days."
-            placeholderTextColor="#94A3B8"
-            multiline
-            value={doctorNote}
-            onChangeText={setDoctorNote}
-          />
-          <TouchableOpacity
-            style={styles.sendDirectiveBtn}
-            onPress={handleSendMessage}
-            activeOpacity={0.8}
-          >
-            <Send size={14} color="#FFFFFF" />
-            <Text style={styles.sendDirectiveText}>Dispatch Clinical Order</Text>
-          </TouchableOpacity>
-        </View>
+        {/* TAB 4: ORDERS & DIRECTIVES */}
+        {activeTab === 'orders' && (
+          <View style={styles.tabContent}>
+            {/* Quick Presets */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>1-Tap Clinical Presets</Text>
+              <Text style={styles.cardSub}>Select a preset directive to populate order</Text>
+
+              {CLINICAL_PRESETS.map((preset, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.presetItem}
+                  onPress={() => setDoctorNote(preset)}
+                  activeOpacity={0.7}
+                >
+                  <Sparkles size={14} color="#0D9488" />
+                  <Text style={styles.presetText}>{preset}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Custom Directive Input */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Dispatch Directive to Patient App</Text>
+              <Text style={styles.cardSub}>Pushes a high-priority clinical instruction directly to {selectedPatient.name}'s device</Text>
+
+              <TextInput
+                style={styles.orderInput}
+                placeholder="Enter customized physician directive or regimen adjustment..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                value={doctorNote}
+                onChangeText={setDoctorNote}
+              />
+
+              <TouchableOpacity style={styles.dispatchBtn} onPress={handleSendMessage}>
+                <Send size={15} color="#FFFFFF" />
+                <Text style={styles.dispatchBtnText}>Dispatch Clinical Order</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Clinical Dossier PDF Export */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Complete Medical Dossier PDF</Text>
+              <Text style={styles.cardSub}>Generate an audit-grade clinical dossier including all medications, vitals, and logs</Text>
+              <TouchableOpacity style={styles.exportFullBtn} onPress={handleExportAuditPDF} disabled={isExporting}>
+                {isExporting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <FileDown size={16} color="#FFFFFF" />
+                    <Text style={styles.exportFullBtnText}>Export & Share Patient Dossier</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        <View style={{ height: 90 }} />
+      </ScrollView>
+
+      {/* Doctor Bottom Tab Navigation Bar */}
+      <View style={styles.docTabBar}>
+        <TouchableOpacity
+          style={styles.docTabItem}
+          onPress={() => setActiveTab('patients')}
+          activeOpacity={0.7}
+        >
+          <Users size={20} color={activeTab === 'patients' ? '#0D9488' : '#94A3B8'} strokeWidth={activeTab === 'patients' ? 2.5 : 2} />
+          <Text style={[styles.docTabLabel, activeTab === 'patients' && styles.docTabLabelActive]}>Patients</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.docTabItem}
+          onPress={() => setActiveTab('rx')}
+          activeOpacity={0.7}
+        >
+          <Pill size={20} color={activeTab === 'rx' ? '#0D9488' : '#94A3B8'} strokeWidth={activeTab === 'rx' ? 2.5 : 2} />
+          <Text style={[styles.docTabLabel, activeTab === 'rx' && styles.docTabLabelActive]}>Rx Pad</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.docTabItem}
+          onPress={() => setActiveTab('vitals')}
+          activeOpacity={0.7}
+        >
+          <Activity size={20} color={activeTab === 'vitals' ? '#0D9488' : '#94A3B8'} strokeWidth={activeTab === 'vitals' ? 2.5 : 2} />
+          <Text style={[styles.docTabLabel, activeTab === 'vitals' && styles.docTabLabelActive]}>RPM Vitals</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.docTabItem}
+          onPress={() => setActiveTab('orders')}
+          activeOpacity={0.7}
+        >
+          <Send size={20} color={activeTab === 'orders' ? '#0D9488' : '#94A3B8'} strokeWidth={activeTab === 'orders' ? 2.5 : 2} />
+          <Text style={[styles.docTabLabel, activeTab === 'orders' && styles.docTabLabelActive]}>Directives</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* MODAL: Add New Prescription */}
-      <Modal
-        visible={isAddModalOpen}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsAddModalOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+      {/* MODAL: Add Prescription */}
+      <Modal visible={isAddModalOpen} animationType="slide" transparent onRequestClose={() => setIsAddModalOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalTop}>
               <View>
                 <Text style={styles.modalTitle}>Issue New Prescription</Text>
                 <Text style={styles.modalSub}>Patient: {selectedPatient.name}</Text>
               </View>
               <TouchableOpacity onPress={() => setIsAddModalOpen(false)}>
-                <X size={22} color="#64748B" />
+                <X size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.fieldLabel}>Medication Name *</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="e.g. Amlodipine, Atorvastatin, Metformin"
-                placeholderTextColor="#94A3B8"
-                value={newMedName}
-                onChangeText={setNewMedName}
-              />
+              <Text style={styles.label}>Medication Name *</Text>
+              <TextInput style={styles.input} placeholder="e.g. Amlodipine, Metformin, Losartan" placeholderTextColor="#94A3B8" value={newMedName} onChangeText={setNewMedName} />
 
-              <Text style={styles.fieldLabel}>Dosage & Strength *</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="e.g. 10mg, 500mg, 25mcg"
-                placeholderTextColor="#94A3B8"
-                value={newMedDosage}
-                onChangeText={setNewMedDosage}
-              />
+              <Text style={styles.label}>Dosage & Strength *</Text>
+              <TextInput style={styles.input} placeholder="e.g. 10mg, 500mg, 25mcg" placeholderTextColor="#94A3B8" value={newMedDosage} onChangeText={setNewMedDosage} />
 
-              <Text style={styles.fieldLabel}>Dosage Form</Text>
-              <View style={styles.formPickerRow}>
-                {(['tablet', 'capsule', 'injection', 'inhaler'] as const).map(form => (
-                  <TouchableOpacity
-                    key={form}
-                    style={[styles.formChip, newMedForm === form && styles.formChipSelected]}
-                    onPress={() => setNewMedForm(form)}
-                  >
-                    <Text
-                      style={[
-                        styles.formChipText,
-                        newMedForm === form && styles.formChipTextSelected,
-                      ]}
-                    >
-                      {form.toUpperCase()}
-                    </Text>
+              <Text style={styles.label}>Dosage Form</Text>
+              <View style={styles.formRow}>
+                {(['tablet', 'capsule', 'injection', 'inhaler'] as const).map(f => (
+                  <TouchableOpacity key={f} style={[styles.formChip, newMedForm === f && styles.formChipActive]} onPress={() => setNewMedForm(f)}>
+                    <Text style={[styles.formChipText, newMedForm === f && styles.formChipTextActive]}>{f.toUpperCase()}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.fieldLabel}>Scheduled Times (comma separated)</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="e.g. 08:00, 20:00"
-                placeholderTextColor="#94A3B8"
-                value={newMedTimes}
-                onChangeText={setNewMedTimes}
-              />
+              <Text style={styles.label}>Times (comma separated)</Text>
+              <TextInput style={styles.input} placeholder="e.g. 08:00, 20:00" placeholderTextColor="#94A3B8" value={newMedTimes} onChangeText={setNewMedTimes} />
 
-              <Text style={styles.fieldLabel}>Instructions / Food Intake</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="e.g. Take with breakfast. Avoid grapefruit."
-                placeholderTextColor="#94A3B8"
-                value={newMedInstructions}
-                onChangeText={setNewMedInstructions}
-              />
+              <Text style={styles.label}>Instructions</Text>
+              <TextInput style={styles.input} placeholder="e.g. Take with food" placeholderTextColor="#94A3B8" value={newMedInstructions} onChangeText={setNewMedInstructions} />
 
-              <Text style={styles.fieldLabel}>Initial Pill Stock Count</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="e.g. 30 or 60"
-                placeholderTextColor="#94A3B8"
-                keyboardType="numeric"
-                value={newMedStock}
-                onChangeText={setNewMedStock}
-              />
+              <Text style={styles.label}>Initial Dispense Quantity</Text>
+              <TextInput style={styles.input} keyboardType="numeric" placeholder="60" placeholderTextColor="#94A3B8" value={newMedStock} onChangeText={setNewMedStock} />
 
-              <TouchableOpacity
-                style={styles.modalSubmitBtn}
-                onPress={handleSaveNewMedication}
-                activeOpacity={0.8}
-              >
-                <Plus size={16} color="#FFFFFF" />
-                <Text style={styles.modalSubmitBtnText}>Save & Authorize Prescription</Text>
+              <TouchableOpacity style={styles.submitModalBtn} onPress={handleSaveNewMedication}>
+                <Plus size={15} color="#FFFFFF" />
+                <Text style={styles.submitModalBtnText}>Authorize Prescription</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -769,150 +805,139 @@ export const DoctorDashboardScreen: React.FC = () => {
       </Modal>
 
       {/* MODAL: Adjust Dosage */}
-      <Modal
-        visible={isAdjustModalOpen}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setIsAdjustModalOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+      <Modal visible={isAdjustModalOpen} animationType="fade" transparent onRequestClose={() => setIsAdjustModalOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalTop}>
               <View>
-                <Text style={styles.modalTitle}>Modify Dosage</Text>
-                <Text style={styles.modalSub}>
-                  {selectedMedForAdjust?.name} for {selectedPatient.name}
-                </Text>
+                <Text style={styles.modalTitle}>Adjust Dosage</Text>
+                <Text style={styles.modalSub}>{selectedMedForAdjust?.name} for {selectedPatient.name}</Text>
               </View>
               <TouchableOpacity onPress={() => setIsAdjustModalOpen(false)}>
-                <X size={22} color="#64748B" />
+                <X size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.fieldLabel}>Current Dosage: {selectedMedForAdjust?.dosage}</Text>
-            <Text style={styles.fieldLabel}>New Adjusted Dosage *</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. 20mg"
-              placeholderTextColor="#94A3B8"
-              value={adjustedDosage}
-              onChangeText={setAdjustedDosage}
-            />
+            <Text style={styles.label}>Current Dosage: {selectedMedForAdjust?.dosage}</Text>
+            <Text style={styles.label}>New Adjusted Dosage *</Text>
+            <TextInput style={styles.input} placeholder="e.g. 20mg" placeholderTextColor="#94A3B8" value={adjustedDosage} onChangeText={setAdjustedDosage} />
 
-            <Text style={styles.fieldLabel}>Updated Clinical Instructions</Text>
-            <TextInput
-              style={[styles.modalInput, { height: 70 }]}
-              multiline
-              placeholder="e.g. Increased dosage for blood pressure stabilization. Take once daily in morning."
-              placeholderTextColor="#94A3B8"
-              value={adjustedInstructions}
-              onChangeText={setAdjustedInstructions}
-            />
+            <Text style={styles.label}>Updated Clinical Notes</Text>
+            <TextInput style={[styles.input, { height: 60 }]} multiline placeholder="Reason for titration..." placeholderTextColor="#94A3B8" value={adjustedInstructions} onChangeText={setAdjustedInstructions} />
 
-            <TouchableOpacity
-              style={styles.modalSubmitBtn}
-              onPress={handleSaveAdjustedPrescription}
-              activeOpacity={0.8}
-            >
-              <CheckCircle2 size={16} color="#FFFFFF" />
-              <Text style={styles.modalSubmitBtnText}>Commit Prescription Change</Text>
+            <TouchableOpacity style={styles.submitModalBtn} onPress={handleSaveAdjustedPrescription}>
+              <CheckCircle2 size={15} color="#FFFFFF" />
+              <Text style={styles.submitModalBtnText}>Commit Change</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screenWrapper: {
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  portalHeader: {
+  docHeader: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
+    paddingTop: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-  },
-  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
-  doctorBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  docHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  stethoscopeBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     backgroundColor: '#CCFBF1',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  portalSub: {
-    fontSize: 10,
-    fontWeight: '800',
+  brandMD: {
+    fontSize: 9,
+    fontWeight: '900',
     color: '#0D9488',
     letterSpacing: 0.8,
   },
-  doctorName: {
-    fontSize: 17,
+  physicianName: {
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
-  hospitalText: {
-    fontSize: 11,
+  hospitalAffiliation: {
+    fontSize: 10,
     color: '#64748B',
   },
-  headerActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  switchRoleBtn: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-  },
-  switchRoleText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  signOutHeaderBtn: {
+  signOutDocBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF2F2',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FECACA',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
     gap: 4,
   },
-  signOutHeaderText: {
+  signOutDocText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#DC2626',
   },
+  activePatientBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    borderBottomWidth: 1,
+    borderBottomColor: '#CCFBF1',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  activePatientLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#0D9488',
+    letterSpacing: 0.5,
+  },
+  activePatientName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  activePatientMeta: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  tabContent: {
+    padding: 16,
+    gap: 14,
+  },
   kpiRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 10,
-    marginTop: 14,
+    gap: 8,
   },
   kpiCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
@@ -922,37 +947,25 @@ const styles = StyleSheet.create({
     borderColor: '#FDE68A',
   },
   kpiNumber: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#0F172A',
   },
   kpiLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 2,
     textAlign: 'center',
-  },
-  rosterSection: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-  },
-  sectionHeading: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 8,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 8,
   },
   searchInput: {
     flex: 1,
@@ -962,11 +975,10 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
   },
   filterChip: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
     backgroundColor: '#FFFFFF',
@@ -978,8 +990,8 @@ const styles = StyleSheet.create({
     borderColor: '#0D9488',
   },
   filterChipText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 9,
+    fontWeight: '800',
     color: '#64748B',
   },
   filterChipTextActive: {
@@ -987,14 +999,13 @@ const styles = StyleSheet.create({
   },
   patientScroll: {
     flexDirection: 'row',
-    marginBottom: 12,
   },
   patientCard: {
-    width: 210,
+    width: 190,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 12,
-    marginRight: 10,
+    borderRadius: 12,
+    padding: 10,
+    marginRight: 8,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
   },
@@ -1008,292 +1019,257 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardPatientName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
   },
   cardPatientMeta: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#64748B',
-    marginTop: 3,
+    marginTop: 2,
+  },
+  cardPatientSub: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#0284C7',
+    marginTop: 4,
   },
   riskBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     borderRadius: 4,
   },
   riskBadgeHigh: { backgroundColor: '#FEE2E2' },
   riskBadgeMed: { backgroundColor: '#FEF3C7' },
   riskBadgeStable: { backgroundColor: '#DCFCE7' },
-  riskBadgeText: { fontSize: 9, fontWeight: '800' },
+  riskBadgeText: { fontSize: 8, fontWeight: '800' },
   riskBadgeTextHigh: { color: '#B91C1C' },
   riskBadgeTextMed: { color: '#B45309' },
   riskBadgeTextStable: { color: '#15803D' },
-  adherenceMiniRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-  },
-  adherenceMiniText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#0284C7',
-  },
-  detailContainer: {
-    paddingHorizontal: 16,
-    marginTop: 4,
-  },
-  patientIdCard: {
+  card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginBottom: 14,
   },
-  patientIdTop: {
+  cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  patientIdName: {
-    fontSize: 18,
+  cardTitle: {
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
   },
-  patientIdDob: {
-    fontSize: 12,
+  cardSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginBottom: 10,
+  },
+  dossierName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  dossierMeta: {
+    fontSize: 11,
     color: '#475569',
     marginTop: 2,
-    fontWeight: '500',
   },
-  patientIdBio: {
+  dossierBio: {
     fontSize: 11,
     color: '#64748B',
     marginTop: 2,
   },
-  exportDossierBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0284C7',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
-  },
-  exportDossierText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  diagnosisContainer: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 10,
-  },
-  diagnosisLabel: {
-    fontSize: 10,
+  sectionSubLabel: {
+    fontSize: 9,
     fontWeight: '800',
     color: '#64748B',
     letterSpacing: 0.5,
-    marginBottom: 6,
+    marginTop: 10,
+    marginBottom: 4,
   },
   tagWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 4,
   },
-  conditionTag: {
+  condTag: {
     backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
   },
-  conditionTagText: {
-    fontSize: 11,
+  condTagText: {
+    fontSize: 10,
     fontWeight: '600',
     color: '#334155',
   },
-  allergyContainer: {
-    marginTop: 10,
-  },
-  allergyLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#B91C1C',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  allergyTag: {
+  allgTag: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FECACA',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 5,
+    gap: 3,
   },
-  allergyTagText: {
-    fontSize: 11,
+  allgTagText: {
+    fontSize: 10,
     fontWeight: '700',
     color: '#B91C1C',
   },
-  contactMiniRow: {
+  caregiverRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
-  contactMiniLabel: {
-    fontSize: 10,
+  caregiverLabel: {
+    fontSize: 9,
     fontWeight: '700',
     color: '#64748B',
   },
-  contactMiniName: {
-    fontSize: 12,
-    fontWeight: '600',
+  caregiverName: {
+    fontSize: 11,
+    fontWeight: '700',
     color: '#0F172A',
-    marginTop: 1,
   },
-  callCaregiverBtn: {
+  caregiverPhone: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  callProxyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#CCFBF1',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    gap: 4,
+  },
+  callProxyText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0D9488',
+  },
+  exportBtnSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0284C7',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     gap: 4,
   },
-  callCaregiverBtnText: {
-    fontSize: 11,
+  exportBtnSmallText: {
+    fontSize: 10,
     fontWeight: '700',
-    color: '#0D9488',
+    color: '#FFFFFF',
   },
-  clinicianAlertBox: {
+  alertBox: {
     backgroundColor: '#FEF2F2',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1.5,
     borderColor: '#FECACA',
-    marginBottom: 14,
   },
   alertTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
-  alertHeading: {
-    fontSize: 13,
+  alertTitle: {
+    fontSize: 12,
     fontWeight: '800',
     color: '#B91C1C',
   },
   alertDrugs: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     color: '#991B1B',
     marginTop: 4,
   },
-  alertDetail: {
-    fontSize: 11,
+  alertDesc: {
+    fontSize: 10,
     color: '#7F1D1D',
-    marginTop: 2,
-    lineHeight: 15,
+    marginTop: 1,
   },
   alertAdvice: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#0D9488',
-    marginTop: 4,
+    marginTop: 3,
   },
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 14,
-  },
-  cardHeading: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  cardSubheading: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
-    marginBottom: 10,
-  },
-  prescriptionsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  addPrescriptionBtn: {
+  addRxBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#0D9488',
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
     gap: 4,
   },
-  addPrescriptionBtnText: {
+  addRxBtnText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  medCardInteractive: {
+  medItem: {
     backgroundColor: '#F8FAFC',
     borderRadius: 10,
-    padding: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 8,
   },
-  medCardTop: {
+  medItemTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  medCardName: {
-    fontSize: 14,
+  medItemName: {
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
   },
-  medCardDosage: {
-    fontSize: 13,
+  medItemDosage: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#0284C7',
   },
-  medCardInstructions: {
+  medItemInstructions: {
     fontSize: 11,
     color: '#475569',
-    marginTop: 2,
+    marginTop: 1,
   },
-  medCardTimes: {
+  medItemTimes: {
     fontSize: 10,
-    fontWeight: '600',
     color: '#64748B',
     marginTop: 2,
   },
-  stockCol: {
-    alignItems: 'flex-end',
+  stockBadge: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  stockText: {
-    fontSize: 11,
+  stockBadgeText: {
+    fontSize: 10,
     fontWeight: '700',
     color: '#334155',
   },
-  medActionsRow: {
+  medItemActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 8,
@@ -1302,17 +1278,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
   },
-  adjustDoseBtn: {
+  adjustBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E0F2FE',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+    borderRadius: 5,
+    gap: 3,
   },
-  adjustDoseBtnText: {
-    fontSize: 11,
+  adjustBtnText: {
+    fontSize: 10,
     fontWeight: '700',
     color: '#0284C7',
   },
@@ -1322,160 +1298,297 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+    borderRadius: 5,
+    gap: 3,
   },
   discontinueBtnText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#DC2626',
   },
+  ePrescribeSignature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 6,
+    gap: 6,
+  },
+  ePrescribeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#0D9488',
+    flex: 1,
+  },
   vitalsGrid: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 6,
+    gap: 8,
   },
-  vitalBox: {
+  vitalCard: {
     flex: 1,
     backgroundColor: '#F8FAFC',
     borderRadius: 10,
-    padding: 12,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  vitalBoxLabel: {
-    fontSize: 10,
+  vitalLabel: {
+    fontSize: 9,
     fontWeight: '700',
     color: '#64748B',
     textTransform: 'uppercase',
   },
-  vitalBoxValue: {
-    fontSize: 18,
+  vitalValue: {
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
-    marginVertical: 4,
+    marginVertical: 2,
   },
-  vitalBoxSub: {
-    fontSize: 10,
+  vitalSub: {
+    fontSize: 9,
     color: '#0D9488',
     fontWeight: '600',
   },
-  directiveInput: {
+  rpmQualifyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
+  },
+  rpmQualifyText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  cptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  cptCode: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  cptDesc: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  cptStatus: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  cptStatusActive: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  rpmTotalCard: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rpmTotalLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  rpmTotalAmount: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#15803D',
+  },
+  presetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 13,
+    borderRadius: 8,
+    padding: 9,
+    marginBottom: 6,
+    gap: 8,
+  },
+  presetText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#334155',
+    flex: 1,
+  },
+  orderInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 12,
     color: '#0F172A',
     minHeight: 70,
     textAlignVertical: 'top',
-    marginTop: 6,
+    marginBottom: 10,
   },
-  sendDirectiveBtn: {
+  dispatchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0D9488',
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 10,
-    marginTop: 10,
     gap: 6,
   },
-  sendDirectiveText: {
-    fontSize: 13,
+  dispatchBtnText: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  // Modals
-  modalOverlay: {
+  exportFullBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0284C7',
+    borderRadius: 8,
+    paddingVertical: 10,
+    gap: 6,
+    marginTop: 6,
+  },
+  exportFullBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  // Bottom Doctor Tabs
+  docTabBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingVertical: 8,
+    paddingBottom: 14,
+  },
+  docTabItem: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  docTabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  docTabLabelActive: {
+    color: '#0D9488',
+    fontWeight: '800',
+  },
+  // Modals
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     padding: 16,
   },
-  modalContent: {
+  modalBox: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 20,
-    maxHeight: '90%',
+    borderRadius: 16,
+    padding: 18,
+    maxHeight: '85%',
   },
-  modalHeader: {
+  modalTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
   modalSub: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#64748B',
   },
-  fieldLabel: {
-    fontSize: 11,
+  label: {
+    fontSize: 10,
     fontWeight: '700',
     color: '#475569',
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 8,
+    marginBottom: 3,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  modalInput: {
+  input: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    fontSize: 13,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    fontSize: 12,
     color: '#0F172A',
   },
-  formPickerRow: {
+  formRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
     marginVertical: 4,
   },
   formChip: {
     flex: 1,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  formChipSelected: {
+  formChipActive: {
     backgroundColor: '#CCFBF1',
     borderColor: '#0D9488',
   },
   formChipText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#64748B',
   },
-  formChipTextSelected: {
+  formChipTextActive: {
     color: '#0D9488',
   },
-  modalSubmitBtn: {
+  submitModalBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0D9488',
-    borderRadius: 12,
-    paddingVertical: 13,
-    marginTop: 18,
-    marginBottom: 10,
+    borderRadius: 10,
+    paddingVertical: 11,
+    marginTop: 14,
+    marginBottom: 8,
     gap: 6,
   },
-  modalSubmitBtnText: {
-    fontSize: 14,
+  submitModalBtnText: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
   },

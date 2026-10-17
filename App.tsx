@@ -90,23 +90,17 @@ function MainApp() {
           </View>
 
           <View style={styles.topBarRight}>
+            <View style={styles.patientBadge}>
+              <Text style={styles.patientBadgeText}>Patient Portal</Text>
+            </View>
+
             <TouchableOpacity
-              style={styles.doctorPortalToggle}
-              onPress={() => switchRole('doctor')}
+              style={styles.patientSignOutBtn}
+              onPress={signOut}
               activeOpacity={0.8}
             >
-              <Text style={styles.doctorPortalToggleText}>🩺 Doctor Portal</Text>
+              <Text style={styles.patientSignOutText}>Sign Out</Text>
             </TouchableOpacity>
-
-            {isDemoMode && (
-              <TouchableOpacity
-                style={styles.exitDemoBtn}
-                onPress={signOut}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.exitDemoText}>Exit Demo</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
@@ -298,18 +292,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  doctorPortalToggle: {
-    backgroundColor: '#F0FDFA',
+  patientBadge: {
+    backgroundColor: '#E0F2FE',
     borderWidth: 1,
-    borderColor: '#99F6E4',
-    paddingHorizontal: 10,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  patientBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0284C7',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  patientSignOutBtn: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 8,
   },
-  doctorPortalToggleText: {
+  patientSignOutText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0D9488',
+    color: '#475569',
   },
   exitDemoBtn: {
     backgroundColor: '#FEF2F2',

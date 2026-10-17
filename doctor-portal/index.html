@@ -268,6 +268,35 @@
               </div>
             </div>
           </div>
+
+          <!-- Medicare RPM Reimbursement Compliance -->
+          <div class="card">
+            <div class="card-title">
+              <span>Medicare RPM Reimbursement Compliance (CMS)</span>
+              <span class="badge badge-stable" style="font-size:11px;">✓ QUALIFIED FOR BILLING</span>
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">
+              30-day monitoring period compliance metrics for RPM billing codes.
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div><strong>CPT 99453</strong> — Initial device setup & patient onboarding ($19.20)</div>
+                <strong style="color:var(--success);">✓ Billed</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div><strong>CPT 99454</strong> — 16+ transmission days per month ($48.80)</div>
+                <strong style="color:var(--success);">21 / 30 Days Logged (✓ Qualified)</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div><strong>CPT 99457</strong> — 20 minutes clinical staff RPM review ($51.40)</div>
+                <strong style="color:var(--success);">24 / 20 Mins Logged (✓ Qualified)</strong>
+              </div>
+            </div>
+            <div style="margin-top:12px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; font-weight:700; color:#166534;">Est. Monthly Practice Revenue per Enrolled Patient:</span>
+              <span style="font-size:16px; font-weight:800; color:#15803d;">$119.40 / patient / mo</span>
+            </div>
+          </div>
         </div>
 
         <!-- Right: Patient Profile & Directives -->
@@ -308,6 +337,18 @@
             <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">
               Directives appear instantly as a high-priority push directive inside the patient's PillGuardian mobile companion.
             </div>
+
+            <!-- Quick Presets -->
+            <div style="margin-bottom:12px;">
+              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">1-Tap Quick Clinical Presets:</div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Titrate Lisinopril to 20mg PO daily for blood pressure stabilization. Re-check BP in 7 days.')">💊 Titrate Lisinopril to 20mg daily</button>
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Order Fasting Metabolic Panel (HbA1c, BUN, Serum Creatinine, eGFR). Schedule with lab.')">🧪 Order Fasting Metabolic Panel</button>
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Restrict dietary sodium intake to <2,000 mg/day. Log resting morning weight daily.')">🧂 Restrict Sodium to <2,000 mg/day</button>
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Schedule 14-day Telehealth RPM follow-up consultation with cardiology care team.')">🩺 Schedule 14-Day Telehealth Review</button>
+              </div>
+            </div>
+
             <div class="directive-box">
               <textarea class="directive-textarea" id="directiveText" placeholder="e.g. Please log morning blood pressure daily. Take Lisinopril 20mg with breakfast. Maintain low-sodium hydration."></textarea>
               <button class="btn btn-primary" onclick="sendDirective()">📡 Dispatch Directive to Phone</button>
@@ -709,6 +750,11 @@
         renderPatientDetails();
         showToast(`${med.name} has been discontinued from ${p.name}'s regimen.`);
       }
+    }
+
+    function setPresetDirective(text) {
+      document.getElementById('directiveText').value = text;
+      showToast('Clinical preset loaded into directive pad.');
     }
 
     function sendDirective() {
