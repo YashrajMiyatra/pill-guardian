@@ -19,10 +19,11 @@ import { TodayScreen } from './src/screens/TodayScreen';
 import { CabinetScreen } from './src/screens/CabinetScreen';
 import { VitalsScreen } from './src/screens/VitalsScreen';
 import { CaregiverScreen } from './src/screens/CaregiverScreen';
+import { DoctorDashboardScreen } from './src/screens/DoctorDashboardScreen';
 import { Colors } from './src/theme/colors';
 
 function MainApp() {
-  const { user, isLoading, isDemoMode } = useAuth();
+  const { user, isLoading, isDemoMode, switchRole, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('today');
   const [isStorageReady, setIsStorageReady] = useState(false);
 
@@ -53,9 +54,19 @@ function MainApp() {
     );
   }
 
-  // If not authenticated and not in demo mode, show Auth Screen
+  // If not authenticated, show Auth Screen
   if (!user) {
     return <AuthScreen />;
+  }
+
+  // If user is a Doctor / Clinician, show Doctor Care Portal
+  if (user.role === 'doctor') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <DoctorDashboardScreen />
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -78,15 +89,42 @@ function MainApp() {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.syncStatusPill}
-            onPress={() => setActiveTab('caregiver')}
-            activeOpacity={0.8}
-          >
-            <View style={styles.onlineDot} />
-            <Text style={styles.syncStatusText}>Protected</Text>
-          </TouchableOpacity>
+          <View style={styles.topBarRight}>
+            <TouchableOpacity
+              style={styles.doctorPortalToggle}
+              onPress={() => switchRole('doctor')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.doctorPortalToggleText}>🩺 Doctor Portal</Text>
+            </TouchableOpacity>
+
+            {isDemoMode && (
+              <TouchableOpacity
+                style={styles.exitDemoBtn}
+                onPress={signOut}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.exitDemoText}>Exit Demo</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
+
+        {/* Demo Mode Notice & Google Sign In Trigger */}
+        {isDemoMode && (
+          <View style={styles.demoBanner}>
+            <Text style={styles.demoBannerText}>
+              💡 Exploring Demo Mode
+            </Text>
+            <TouchableOpacity
+              style={styles.demoBannerAction}
+              onPress={signOut}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.demoBannerActionText}>Sign In with Google →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Active Screen View */}
         <View style={styles.screenContainer}>
@@ -254,6 +292,63 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#15803D',
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  doctorPortalToggle: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  doctorPortalToggleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0D9488',
+  },
+  exitDemoBtn: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  exitDemoText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  demoBanner: {
+    backgroundColor: '#FEF3C7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FDE68A',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  demoBannerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  demoBannerAction: {
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  demoBannerActionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   screenContainer: {
     flex: 1,

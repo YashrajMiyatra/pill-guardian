@@ -30,7 +30,7 @@ import { useAuth } from '../context/AuthContext';
 import { Colors } from '../theme/colors';
 
 export const CaregiverScreen: React.FC = () => {
-  const { user, signOut, isDemoMode } = useAuth();
+  const { user, signOut, isDemoMode, switchRole } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [caregiver, setCaregiver] = useState<CaregiverContact | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -232,6 +232,15 @@ export const CaregiverScreen: React.FC = () => {
           >
             <Phone size={16} color="#FFFFFF" />
             <Text style={styles.callBtnText}>Call Clinic</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.smsBtn, { backgroundColor: '#CCFBF1' }]}
+            onPress={() => switchRole('doctor')}
+            activeOpacity={0.8}
+          >
+            <Stethoscope size={16} color="#0D9488" />
+            <Text style={[styles.smsBtnText, { color: '#0D9488' }]}>Doctor Portal</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -18,7 +18,7 @@ import { BiometricService } from '../services/biometrics';
 import { Colors } from '../theme/colors';
 
 export const AuthScreen: React.FC = () => {
-  const { signIn, signUp, loginAsDemoUser, authenticateWithBiometrics } = useAuth();
+  const { signIn, signUp, signInWithGoogle, loginAsDemoUser, authenticateWithBiometrics } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -94,6 +94,31 @@ export const AuthScreen: React.FC = () => {
 
         {/* Auth Card */}
         <View style={styles.card}>
+          {/* Hero Google Sign-In Button */}
+          <TouchableOpacity
+            style={styles.googleHeroBtn}
+            onPress={async () => {
+              setIsSubmitting(true);
+              const res = await signInWithGoogle();
+              setIsSubmitting(false);
+              if (!res.success) {
+                Alert.alert('Google Sign-In', res.error || 'Could not authenticate with Google.');
+              }
+            }}
+            activeOpacity={0.85}
+          >
+            <View style={styles.googleIconBadge}>
+              <Text style={styles.googleG}>G</Text>
+            </View>
+            <Text style={styles.googleHeroBtnText}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          <View style={styles.orDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.orText}>OR WITH EMAIL & PASSWORD</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           {/* Tab Switcher */}
           <View style={styles.tabSwitcher}>
             <TouchableOpacity
@@ -176,7 +201,7 @@ export const AuthScreen: React.FC = () => {
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.primaryBtnText}>
-                {isSignUp ? 'Create Patient Account' : 'Sign In'}
+                {isSignUp ? 'Create Patient Account' : 'Sign In with Email'}
               </Text>
             )}
           </TouchableOpacity>
@@ -196,20 +221,29 @@ export const AuthScreen: React.FC = () => {
           )}
         </View>
 
-        {/* 1-Tap Demo Mode for Reviewers & Quick Exploration */}
+        {/* 1-Tap Demo & Clinical Portal Quick Entry */}
         <View style={styles.demoSection}>
-          <TouchableOpacity
-            style={styles.demoBtn}
-            onPress={loginAsDemoUser}
-            activeOpacity={0.8}
-          >
-            <Sparkles size={16} color="#0284C7" />
-            <Text style={styles.demoBtnText}>
-              Explore Demo Mode (1-Tap Instant Access)
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.quickAccessTitle}>Reviewer & Clinical Access</Text>
+          <View style={styles.demoButtonGroup}>
+            <TouchableOpacity
+              style={styles.demoBtn}
+              onPress={() => loginAsDemoUser('patient')}
+              activeOpacity={0.8}
+            >
+              <Sparkles size={15} color="#0284C7" />
+              <Text style={styles.demoBtnText}>Patient Demo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.demoBtn, styles.doctorDemoBtn]}
+              onPress={() => loginAsDemoUser('doctor')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.demoBtnText, { color: '#0D9488' }]}>🩺 Doctor Portal</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.demoFootnote}>
-            Preloads sample chronic conditions (Diabetes & Hypertension) with real-time logs.
+            Switch roles anytime between Patient Regimen & Physician RPM Dashboard.
           </Text>
         </View>
       </ScrollView>
@@ -359,9 +393,93 @@ const styles = StyleSheet.create({
     color: '#0284C7',
     marginLeft: 8,
   },
-  demoSection: {
-    marginTop: 24,
+  orDivider: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginVertical: 14,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  orText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8',
+    marginHorizontal: 10,
+    letterSpacing: 0.8,
+  },
+  googleHeroBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 4,
+  },
+  googleHeroBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    paddingVertical: 12,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  googleIconBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EA4335',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  googleG: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  googleBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  demoSection: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  quickAccessTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  demoButtonGroup: {
+    flexDirection: 'row',
+    gap: 8,
   },
   demoBtn: {
     flexDirection: 'row',
@@ -369,21 +487,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#BAE6FD',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     borderRadius: 999,
+  },
+  doctorDemoBtn: {
+    borderColor: '#99F6E4',
+    backgroundColor: '#F0FDFA',
   },
   demoBtnText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#0284C7',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   demoFootnote: {
     fontSize: 11,
     color: '#94A3B8',
     textAlign: 'center',
     marginTop: 8,
-    maxWidth: 280,
+    maxWidth: 290,
   },
 });
