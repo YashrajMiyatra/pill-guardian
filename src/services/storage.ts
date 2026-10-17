@@ -93,6 +93,72 @@ export const StorageService = {
     }
   },
 
+  async updatePrescription(medId: string, updates: Partial<Medication>): Promise<Medication[]> {
+    try {
+      const current = await this.getMedications();
+      const idx = current.findIndex(m => m.id === medId);
+      if (idx >= 0) {
+        current[idx] = { ...current[idx], ...updates };
+        await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(current));
+        const todayStr = new Date().toISOString().split('T')[0];
+        await this.regenerateDailyDoses(todayStr);
+      }
+      return current;
+    } catch (e) {
+      console.error('Error updating prescription:', e);
+      throw e;
+    }
+  },
+
+  async discontinueMedication(medId: string): Promise<Medication[]> {
+    try {
+      const current = await this.getMedications();
+      const idx = current.findIndex(m => m.id === medId);
+      if (idx >= 0) {
+        current[idx].isActive = false;
+        await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(current));
+        const todayStr = new Date().toISOString().split('T')[0];
+        await this.regenerateDailyDoses(todayStr);
+      }
+      return current;
+    } catch (e) {
+      console.error('Error discontinuing medication:', e);
+      throw e;
+    }
+  },
+
+  async regenerateDailyDoses(dateString: string): Promise<DoseItem[]> {
+    const key = `${KEYS.DOSE_LOGS_PREFIX}${dateString}`;
+    try {
+      const meds = await this.getMedications();
+      const generatedDoses: DoseItem[] = [];
+
+      meds.filter(m => m.isActive).forEach(med => {
+        med.times.forEach(time => {
+          generatedDoses.push({
+            id: `${med.id}_${time}_${dateString}`,
+            medicationId: med.id,
+            medicationName: med.name,
+            dosage: med.dosage,
+            form: med.form,
+            color: med.color,
+            instructions: med.instructions,
+            scheduledTime: time,
+            timeCategory: getTimeCategory(time),
+            status: 'pending',
+          });
+        });
+      });
+
+      generatedDoses.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
+      await AsyncStorage.setItem(key, JSON.stringify(generatedDoses));
+      return generatedDoses;
+    } catch (e) {
+      console.error('Error regenerating daily doses:', e);
+      return [];
+    }
+  },
+
   // Daily Doses logic
   async getDailyDoses(dateString: string): Promise<DoseItem[]> {
     const key = `${KEYS.DOSE_LOGS_PREFIX}${dateString}`;

@@ -12,13 +12,14 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Mail, Lock, User, Fingerprint, ShieldCheck, Eye, EyeOff, Sparkles } from 'lucide-react-native';
+import { Mail, Lock, User, Fingerprint, ShieldCheck, Eye, EyeOff, Sparkles, Stethoscope } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { BiometricService } from '../services/biometrics';
 import { Colors } from '../theme/colors';
 
 export const AuthScreen: React.FC = () => {
   const { signIn, signUp, signInWithGoogle, loginAsDemoUser, authenticateWithBiometrics } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor'>('patient');
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -92,14 +93,42 @@ export const AuthScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Portal Role Selector (Patient vs Doctor) */}
+        <View style={styles.roleToggleRow}>
+          <TouchableOpacity
+            style={[styles.roleToggleBtn, selectedRole === 'patient' && styles.roleToggleBtnActive]}
+            onPress={() => setSelectedRole('patient')}
+            activeOpacity={0.8}
+          >
+            <User size={15} color={selectedRole === 'patient' ? '#FFFFFF' : '#64748B'} />
+            <Text style={[styles.roleToggleText, selectedRole === 'patient' && styles.roleToggleTextActive]}>
+              Patient Portal
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.roleToggleBtn, selectedRole === 'doctor' && styles.roleToggleBtnActiveDoctor]}
+            onPress={() => setSelectedRole('doctor')}
+            activeOpacity={0.8}
+          >
+            <Stethoscope size={15} color={selectedRole === 'doctor' ? '#FFFFFF' : '#64748B'} />
+            <Text style={[styles.roleToggleText, selectedRole === 'doctor' && styles.roleToggleTextActive]}>
+              Doctor / Care Team
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Auth Card */}
         <View style={styles.card}>
           {/* Hero Google Sign-In Button */}
           <TouchableOpacity
-            style={styles.googleHeroBtn}
+            style={[
+              styles.googleHeroBtn,
+              selectedRole === 'doctor' && styles.googleHeroBtnDoctor,
+            ]}
             onPress={async () => {
               setIsSubmitting(true);
-              const res = await signInWithGoogle();
+              const res = await signInWithGoogle(selectedRole);
               setIsSubmitting(false);
               if (!res.success) {
                 Alert.alert('Google Sign-In', res.error || 'Could not authenticate with Google.');
@@ -110,12 +139,14 @@ export const AuthScreen: React.FC = () => {
             <View style={styles.googleIconBadge}>
               <Text style={styles.googleG}>G</Text>
             </View>
-            <Text style={styles.googleHeroBtnText}>Continue with Google</Text>
+            <Text style={styles.googleHeroBtnText}>
+              Continue with Google ({selectedRole === 'doctor' ? 'Doctor SSO' : 'Patient'})
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.orDivider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.orText}>OR WITH EMAIL & PASSWORD</Text>
+            <Text style={styles.orText}>OR WITH CLINIC EMAIL</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -299,6 +330,48 @@ const styles = StyleSheet.create({
     color: '#0D9488',
     marginLeft: 4,
   },
+  roleToggleRow: {
+    flexDirection: 'row',
+    width: '100%',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
+    gap: 4,
+  },
+  roleToggleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  roleToggleBtnActive: {
+    backgroundColor: '#0284C7',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  roleToggleBtnActiveDoctor: {
+    backgroundColor: '#0D9488',
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  roleToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  roleToggleTextActive: {
+    color: '#FFFFFF',
+  },
   card: {
     width: '100%',
     backgroundColor: '#FFFFFF',
@@ -430,6 +503,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#0F172A',
+  },
+  googleHeroBtnDoctor: {
+    borderColor: '#0D9488',
+    backgroundColor: '#F0FDFA',
   },
   googleBtn: {
     flexDirection: 'row',

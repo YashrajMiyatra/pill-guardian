@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PillGuardian™ Clinical Portal | Doctor & Care Team Dashboard</title>
+  <title>PillGuardian™ Clinical RPM Portal | Doctor & Physician Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,42 +29,54 @@
     body { background-color: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
     /* Sidebar */
-    .sidebar { width: 300px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-    .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-    .brand-icon { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 18px; }
+    .sidebar { width: 320px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sidebar-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #0284c7, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 20px; }
     .brand-title { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1.2; }
-    .brand-sub { font-size: 11px; color: var(--teal); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .brand-sub { font-size: 10px; color: var(--teal); font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; }
 
-    .patient-search { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .patient-search { padding: 12px 16px; border-bottom: 1px solid var(--border); }
     .search-input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 13px; outline: none; }
-    .search-input:focus { border-color: var(--primary); }
+    .search-input:focus { border-color: var(--teal); }
+
+    .filter-chips { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: #fafafa; }
+    .filter-chip { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--muted); }
+    .filter-chip.active { background: var(--teal); color: white; border-color: var(--teal); }
 
     .patient-list { flex: 1; overflow-y: auto; padding: 12px; }
-    .patient-item { padding: 12px 14px; border-radius: 10px; margin-bottom: 6px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s; }
+    .patient-item { padding: 12px 14px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s; }
     .patient-item:hover { background: var(--bg); }
     .patient-item.active { background: #f0fdfa; border-color: var(--teal); }
     .patient-name-row { display: flex; justify-content: space-between; align-items: center; }
-    .patient-name { font-weight: 700; font-size: 14px; color: var(--text); }
+    .patient-name { font-weight: 800; font-size: 14px; color: var(--text); }
     .badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
     .badge-high { background: var(--danger-light); color: #b91c1c; }
     .badge-medium { background: var(--warning-light); color: #b45309; }
     .badge-stable { background: var(--success-light); color: #15803d; }
-    .patient-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .patient-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .patient-sub-stats { font-size: 11px; font-weight: 600; color: var(--primary); margin-top: 4px; display: flex; gap: 8px; }
 
     /* Main Content */
     .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-    .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; }
+    .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; justify-content: space-between; align-items: center; }
     .doc-info { display: flex; align-items: center; gap: 12px; }
     .doc-avatar { width: 44px; height: 44px; border-radius: 22px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; color: var(--teal); font-weight: 800; font-size: 16px; }
     .doc-name { font-size: 16px; font-weight: 800; color: var(--text); }
     .doc-dept { font-size: 12px; color: var(--muted); }
-    .topbar-actions { display: flex; gap: 10px; }
-    .btn { padding: 9px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: none; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-dark); }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .btn { padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
+    .btn-primary { background: var(--teal); color: white; }
+    .btn-primary:hover { background: #0f766e; }
+    .btn-blue { background: var(--primary); color: white; }
+    .btn-blue:hover { background: var(--primary-dark); }
     .btn-outline { background: white; border: 1px solid var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger-light); color: #b91c1c; border: 1px solid #fecaca; }
+    .btn-sm { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
 
-    .content-area { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+    .google-sso-badge { display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #1e293b; }
+    .google-g-icon { width: 16px; height: 16px; border-radius: 8px; background: #ea4335; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; }
+
+    .content-area { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
 
     /* KPI Row */
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -74,12 +86,12 @@
     .kpi-sub { font-size: 12px; color: var(--teal); font-weight: 600; margin-top: 4px; }
 
     /* Dossier Grid */
-    .dossier-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .dossier-grid { display: grid; grid-template-columns: 2fr 1.1fr; gap: 20px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
     .card-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
 
     /* Interaction Alert */
-    .alert-box { background: var(--danger-light); border: 1.5px solid #fecaca; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+    .alert-box { background: var(--danger-light); border: 1.5px solid #fecaca; border-radius: 10px; padding: 14px; }
     .alert-box-title { font-size: 13px; font-weight: 800; color: #b91c1c; display: flex; align-items: center; gap: 6px; }
     .alert-box-desc { font-size: 12px; color: #7f1d1d; margin-top: 4px; line-height: 1.4; }
     .alert-box-rec { font-size: 12px; color: #0f766e; font-weight: 700; margin-top: 6px; }
@@ -87,8 +99,9 @@
     /* Medication Table */
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .med-badge { background: #f1f5f9; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .actions-cell { display: flex; gap: 6px; align-items: center; }
 
     /* Vitals Box */
     .vitals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
@@ -102,7 +115,22 @@
     .directive-textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px; min-height: 80px; resize: none; outline: none; background: var(--bg); }
     .directive-textarea:focus { border-color: var(--teal); }
 
-    .tag-allergy { background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block; }
+    .tag-allergy { background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+    .tag-condition { background: #f1f5f9; color: #334155; font-weight: 600; padding: 3px 8px; border-radius: 4px; font-size: 11px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+
+    /* Modal */
+    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: white; border-radius: 14px; width: 480px; max-width: 95%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 4px; }
+    .form-control { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+    .form-control:focus { border-color: var(--teal); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 200; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); }
   </style>
 </head>
 <body>
@@ -113,39 +141,22 @@
       <div class="brand-icon">P</div>
       <div>
         <div class="brand-title">PillGuardian™</div>
-        <div class="brand-sub">Clinical RPM Portal</div>
+        <div class="brand-sub">Clinical RPM Care Portal</div>
       </div>
     </div>
 
     <div class="patient-search">
-      <input type="text" class="search-input" id="searchPatient" placeholder="🔍 Search patient roster..." onkeyup="filterPatients()" />
+      <input type="text" class="search-input" id="searchPatient" placeholder="🔍 Search patient name, condition..." onkeyup="filterPatients()" />
     </div>
 
-    <div class="patient-list" id="patientList">
-      <div class="patient-item active" onclick="selectPatient(0)">
-        <div class="patient-name-row">
-          <span class="patient-name">Arthur Bennett</span>
-          <span class="badge badge-medium">Medium</span>
-        </div>
-        <div class="patient-meta">Age 68 • Type 2 Diabetes, HTN</div>
-      </div>
-
-      <div class="patient-item" onclick="selectPatient(1)">
-        <div class="patient-name-row">
-          <span class="patient-name">Eleanor Vance</span>
-          <span class="badge badge-high">BP Spike</span>
-        </div>
-        <div class="patient-meta">Age 72 • Heart Failure, A-Fib</div>
-      </div>
-
-      <div class="patient-item" onclick="selectPatient(2)">
-        <div class="patient-name-row">
-          <span class="patient-name">Marcus Davis</span>
-          <span class="badge badge-stable">Stable</span>
-        </div>
-        <div class="patient-meta">Age 59 • Hypertension</div>
-      </div>
+    <div class="filter-chips">
+      <div class="filter-chip active" onclick="setRiskFilter('all', this)">ALL (3)</div>
+      <div class="filter-chip" onclick="setRiskFilter('high', this)">HIGH RISK</div>
+      <div class="filter-chip" onclick="setRiskFilter('medium', this)">MEDIUM</div>
+      <div class="filter-chip" onclick="setRiskFilter('stable', this)">STABLE</div>
     </div>
+
+    <div class="patient-list" id="patientList"></div>
   </aside>
 
   <!-- Main View -->
@@ -155,13 +166,17 @@
         <div class="doc-avatar">RH</div>
         <div>
           <div class="doc-name">Dr. Robert Henderson, M.D.</div>
-          <div class="doc-dept">Attending Cardiologist • Metropolitan General Hospital</div>
+          <div class="doc-dept">Attending Cardiologist • Metropolitan General Hospital RPM</div>
         </div>
       </div>
 
       <div class="topbar-actions">
-        <button class="btn btn-outline" onclick="window.print()">🖨️ Print Clinical Chart</button>
-        <button class="btn btn-primary" onclick="alert('Exporting Remote Patient Monitoring (RPM) CMS Billing summary...')">📄 Export RPM Audit (PDF)</button>
+        <div class="google-sso-badge">
+          <div class="google-g-icon">G</div>
+          <span>Google Clinician SSO Active</span>
+        </div>
+        <button class="btn btn-outline" onclick="window.print()">🖨️ Print Chart</button>
+        <button class="btn btn-blue" onclick="exportAuditDossier()">📄 Export PDF Dossier</button>
       </div>
     </header>
 
@@ -183,13 +198,13 @@
         <div class="kpi-card">
           <div class="kpi-title">Current Patient Adherence</div>
           <div class="kpi-value" style="color:#15803d;" id="kpiAdherence">85%</div>
-          <div class="kpi-sub">14-Day Consecutive Streak</div>
+          <div class="kpi-sub" id="kpiStreak">14-Day Consecutive Streak</div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-title">Refill Status</div>
-          <div class="kpi-value" style="color:#0284c7;" id="kpiRefill">4 Pills Left</div>
-          <div class="kpi-sub">Lisinopril 10mg (Refill Pending)</div>
+          <div class="kpi-title">Active Regimen Count</div>
+          <div class="kpi-value" style="color:#0284c7;" id="kpiMedCount">4 Meds</div>
+          <div class="kpi-sub" id="kpiMedSub">All Authorized by Dr. Henderson</div>
         </div>
       </div>
 
@@ -197,59 +212,33 @@
       <div class="dossier-grid">
         <!-- Left: Prescriptions & Vitals -->
         <div style="display:flex; flex-direction:column; gap:20px;">
-          <!-- Drug Interaction Warning -->
-          <div class="alert-box">
+          <!-- Clinical Drug Interaction Warning -->
+          <div class="alert-box" id="interactionAlertBox">
             <div class="alert-box-title">⚠️ Clinical Drug Interaction Detected: Lisinopril ↔ OTC Ibuprofen / NSAIDs</div>
             <div class="alert-box-desc">Concomitant use of ACE inhibitors and NSAIDs blunts antihypertensive efficacy and increases acute renal impairment risk.</div>
-            <div class="alert-box-rec">Physician Recommendation: Advise acetaminophen (Tylenol) as preferred analgesia and monitor serum creatinine.</div>
+            <div class="alert-box-rec">Clinical Directive: Advise acetaminophen (Tylenol) as preferred analgesia and monitor serum creatinine.</div>
           </div>
 
-          <!-- Active Prescriptions -->
+          <!-- Active Prescriptions with CRUD -->
           <div class="card">
             <div class="card-title">
-              <span>Active Prescription Regimen</span>
-              <span style="font-size:12px; color:var(--muted); font-weight:600;" id="activePrescriptionCount">5 Medications</span>
+              <div>
+                <span>Prescription Regimen</span>
+                <span style="font-size:12px; color:var(--muted); font-weight:600; margin-left:6px;" id="activePrescriptionCount">(4 Active)</span>
+              </div>
+              <button class="btn btn-primary" onclick="openAddPrescriptionModal()">+ Prescribe New Medication</button>
             </div>
             <table>
               <thead>
                 <tr>
                   <th>Medication</th>
                   <th>Dosage</th>
-                  <th>Frequency</th>
-                  <th>Stock Remaining</th>
-                  <th>Prescriber</th>
+                  <th>Schedule</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="medTableBody">
-                <tr>
-                  <td><strong>Metformin HCl</strong> <span class="med-badge">Tablet</span></td>
-                  <td>500 mg</td>
-                  <td>Twice daily (08:00, 19:00)</td>
-                  <td><strong>42</strong> pills</td>
-                  <td>Dr. Evelyn Reed (Endo)</td>
-                </tr>
-                <tr>
-                  <td><strong>Lisinopril</strong> <span class="med-badge">Pill</span></td>
-                  <td>10 mg</td>
-                  <td>Morning (08:00)</td>
-                  <td><strong style="color:#b91c1c;">4</strong> pills (Refill Alert!)</td>
-                  <td>Dr. Robert Henderson</td>
-                </tr>
-                <tr>
-                  <td><strong>Atorvastatin</strong> <span class="med-badge">Capsule</span></td>
-                  <td>20 mg</td>
-                  <td>Bedtime (21:30)</td>
-                  <td><strong>28</strong> pills</td>
-                  <td>Dr. Robert Henderson</td>
-                </tr>
-                <tr>
-                  <td><strong>Albuterol Inhaler</strong> <span class="med-badge">Inhaler</span></td>
-                  <td>90 mcg</td>
-                  <td>As needed (2 puffs)</td>
-                  <td><strong>140</strong> doses</td>
-                  <td>Dr. Sarah Mitchell</td>
-                </tr>
-              </tbody>
+              <tbody id="medTableBody"></tbody>
             </table>
           </div>
 
@@ -260,22 +249,22 @@
               <div class="vital-stat">
                 <div class="vital-stat-title">Blood Pressure (Morning Resting)</div>
                 <div class="vital-stat-value" id="valBP">122 / 78 mmHg</div>
-                <div class="vital-stat-target">AHA Category: Normal Optimal</div>
+                <div class="vital-stat-target" id="valBPCat">AHA Category: Normal Optimal</div>
               </div>
               <div class="vital-stat">
                 <div class="vital-stat-title">Fasting Blood Glucose</div>
                 <div class="vital-stat-value" id="valGlucose">104 mg/dL</div>
-                <div class="vital-stat-target">ADA Target Range: 80 - 130</div>
+                <div class="vital-stat-target">ADA Target Range: 80 - 130 mg/dL</div>
               </div>
               <div class="vital-stat">
                 <div class="vital-stat-title">Resting Pulse</div>
-                <div class="vital-stat-value">72 BPM</div>
+                <div class="vital-stat-value" id="valPulse">72 BPM</div>
                 <div class="vital-stat-target">Normal Sinus Rhythm</div>
               </div>
               <div class="vital-stat">
-                <div class="vital-stat-title">Body Weight</div>
-                <div class="vital-stat-value">74.5 kg</div>
-                <div class="vital-stat-target">Stable (±0.4 kg over 30d)</div>
+                <div class="vital-stat-title">Body Weight & BMI</div>
+                <div class="vital-stat-value" id="valWeight">84 kg</div>
+                <div class="vital-stat-target" id="valBMI">BMI: 26.5 (Overweight Class I)</div>
               </div>
             </div>
           </div>
@@ -285,36 +274,43 @@
         <div style="display:flex; flex-direction:column; gap:20px;">
           <!-- Patient Summary Card -->
           <div class="card">
-            <div class="card-title">Patient Profile</div>
-            <div style="margin-bottom:12px;">
+            <div class="card-title">Patient Medical Profile</div>
+            <div style="margin-bottom:14px;">
               <div style="font-size:18px; font-weight:800;" id="profName">Arthur Bennett</div>
-              <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="profMeta">DOB: 1958-06-14 (Age 68) • Blood Type: <strong>O+</strong></div>
-            </div>
-
-            <div style="margin-bottom:12px;">
-              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Critical Drug Allergies:</div>
-              <div style="margin-top:4px;">
-                <span class="tag-allergy">Penicillin (Severe Hives)</span>
-                <span class="tag-allergy" style="margin-left:4px;">Sulfa Drugs</span>
+              <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="profMeta">
+                DOB: 1958-03-14 (Age 68) • Gender: Male • Blood Type: <strong>O+</strong>
+              </div>
+              <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="profBio">
+                Height: 178 cm (5'10") • Weight: 84 kg (185 lbs)
               </div>
             </div>
 
             <div style="margin-bottom:12px;">
-              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Primary Caregiver:</div>
-              <div style="font-size:13px; font-weight:700; margin-top:2px;">Maya Sharma (Daughter)</div>
-              <div style="font-size:12px; color:var(--muted);">📞 +1 (555) 872-9104</div>
+              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">Diagnosed Conditions:</div>
+              <div id="profConditions"></div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <div style="font-size:11px; font-weight:700; color:#b91c1c; text-transform:uppercase; margin-bottom:4px;">Critical Drug Allergies:</div>
+              <div id="profAllergies"></div>
+            </div>
+
+            <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Primary Proxy / Caregiver:</div>
+              <div style="font-size:13px; font-weight:700; margin-top:2px;" id="profCaregiverName">Sarah Bennett (Daughter)</div>
+              <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="profCaregiverPhone">📞 +1 (555) 902-1144</div>
             </div>
           </div>
 
-          <!-- Doctor Directives -->
+          <!-- Push Directives -->
           <div class="card">
-            <div class="card-title">Push Clinical Directive to Phone</div>
+            <div class="card-title">Push Clinical Directive to Patient Device</div>
             <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">
-              Directives appear instantly as a high-priority notification inside the patient's PillGuardian mobile app.
+              Directives appear instantly as a high-priority push directive inside the patient's PillGuardian mobile companion.
             </div>
             <div class="directive-box">
-              <textarea class="directive-textarea" id="directiveText" placeholder="e.g. Please log resting BP morning & evening. Increase daily hydration and maintain low-sodium regimen."></textarea>
-              <button class="btn btn-primary" onclick="sendDirective()">📡 Dispatch to Patient App</button>
+              <textarea class="directive-textarea" id="directiveText" placeholder="e.g. Please log morning blood pressure daily. Take Lisinopril 20mg with breakfast. Maintain low-sodium hydration."></textarea>
+              <button class="btn btn-primary" onclick="sendDirective()">📡 Dispatch Directive to Phone</button>
             </div>
           </div>
         </div>
@@ -322,68 +318,419 @@
     </div>
   </main>
 
+  <!-- MODAL: Add Prescription -->
+  <div class="modal-backdrop" id="addPrescriptionModal">
+    <div class="modal">
+      <div class="modal-title">Authorize New Prescription</div>
+      <div class="modal-sub" id="addModalPatientSub">Patient: Arthur Bennett</div>
+
+      <div class="form-group">
+        <label class="form-label">Medication Name *</label>
+        <input type="text" class="form-control" id="newMedName" placeholder="e.g. Amlodipine, Metformin, Losartan" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Dosage & Strength *</label>
+        <input type="text" class="form-control" id="newMedDosage" placeholder="e.g. 10mg, 500mg, 25mcg" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Dosage Form</label>
+        <select class="form-control" id="newMedForm">
+          <option value="Tablet">Tablet</option>
+          <option value="Capsule">Capsule</option>
+          <option value="Injection">Injection</option>
+          <option value="Inhaler">Inhaler</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Schedule Times (Comma-separated)</label>
+        <input type="text" class="form-control" id="newMedTimes" value="08:00, 20:00" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Instructions / Food Intake</label>
+        <input type="text" class="form-control" id="newMedInstructions" placeholder="e.g. Take with food in the morning" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Initial Dispense Quantity (Stock)</label>
+        <input type="number" class="form-control" id="newMedStock" value="60" />
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAddPrescriptionModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewPrescription()">Authorize & Commit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Adjust Dosage -->
+  <div class="modal-backdrop" id="adjustDosageModal">
+    <div class="modal">
+      <div class="modal-title">Modify Prescription Dosage</div>
+      <div class="modal-sub" id="adjustModalSub">Adjusting dosage for Arthur Bennett</div>
+
+      <div class="form-group">
+        <label class="form-label">New Dosage / Strength *</label>
+        <input type="text" class="form-control" id="adjustDosageInput" placeholder="e.g. 20mg" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Updated Instructions</label>
+        <textarea class="form-control" id="adjustInstructionsInput" rows="3" placeholder="e.g. Increased dosage for blood pressure stabilization."></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAdjustDosageModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAdjustedDosage()">Save Dosage Change</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toastMessage"></div>
+
   <script>
-    const patients = [
+    const INITIAL_PATIENTS = [
       {
+        id: "pat-1",
         name: "Arthur Bennett",
-        meta: "DOB: 1958-06-14 (Age 68) • Blood Type: O+",
-        bp: "122 / 78 mmHg",
-        glucose: "104 mg/dL",
+        dob: "1958-03-14",
+        age: 68,
+        gender: "Male",
+        bloodType: "O+",
+        weight: "84 kg (185 lbs)",
+        height: "178 cm (5'10\")",
+        bmi: "BMI 26.5 (Overweight I)",
+        conditions: ["Type 2 Diabetes", "Essential Hypertension", "Mild Persistent Asthma"],
+        allergies: ["Penicillin (Severe Anaphylaxis)", "Sulfa Drugs (Rash)"],
+        riskLevel: "medium",
         adherence: "85%",
-        refill: "4 Pills Left",
+        streak: "14-Day Consecutive Streak",
+        bp: "122 / 78 mmHg",
+        bpCat: "AHA Category: Normal Optimal",
+        glucose: "104 mg/dL",
+        pulse: "72 BPM",
+        caregiverName: "Sarah Bennett (Daughter)",
+        caregiverPhone: "+1 (555) 902-1144",
+        medications: [
+          { id: "m-1", name: "Metformin HCl", dosage: "500mg", form: "Tablet", times: "08:00, 19:00", stock: 42, instructions: "Take with breakfast and dinner" },
+          { id: "m-2", name: "Lisinopril", dosage: "10mg", form: "Tablet", times: "08:00", stock: 4, instructions: "Take in the morning with water" },
+          { id: "m-3", name: "Atorvastatin", dosage: "20mg", form: "Capsule", times: "21:30", stock: 28, instructions: "Take at bedtime" },
+          { id: "m-4", name: "Albuterol Inhaler", dosage: "90mcg", form: "Inhaler", times: "As needed", stock: 140, instructions: "Inhale 2 puffs for wheezing" }
+        ]
       },
       {
+        id: "pat-2",
         name: "Eleanor Vance",
-        meta: "DOB: 1954-03-22 (Age 72) • Blood Type: A+",
-        bp: "148 / 92 mmHg (ALERT)",
-        glucose: "138 mg/dL",
+        dob: "1954-08-22",
+        age: 72,
+        gender: "Female",
+        bloodType: "A-",
+        weight: "62 kg (136 lbs)",
+        height: "162 cm (5'4\")",
+        bmi: "BMI 23.6 (Normal)",
+        conditions: ["Congestive Heart Failure", "Atrial Fibrillation", "CKD Stage 2"],
+        allergies: ["Aspirin (GI Bleeding)", "ACE Inhibitors (Severe Cough)"],
+        riskLevel: "high",
         adherence: "64%",
-        refill: "18 Pills Left",
+        streak: "Missed Yesterday Evening",
+        bp: "148 / 92 mmHg",
+        bpCat: "AHA Category: Stage 2 Hypertension Alert",
+        glucose: "138 mg/dL",
+        pulse: "88 BPM (Irregular)",
+        caregiverName: "David Vance (Son)",
+        caregiverPhone: "+1 (555) 883-4412",
+        medications: [
+          { id: "m-201", name: "Furosemide (Lasix)", dosage: "40mg", form: "Tablet", times: "08:00", stock: 18, instructions: "Take in morning to prevent nighttime urination" },
+          { id: "m-202", name: "Carvedilol", dosage: "12.5mg", form: "Tablet", times: "08:00, 20:00", stock: 22, instructions: "Take with meals" },
+          { id: "m-203", name: "Apixaban (Eliquis)", dosage: "5mg", form: "Tablet", times: "09:00, 21:00", stock: 14, instructions: "Do not skip doses. Anticoagulant." }
+        ]
       },
       {
+        id: "pat-3",
         name: "Marcus Davis",
-        meta: "DOB: 1967-11-09 (Age 59) • Blood Type: B+",
-        bp: "118 / 74 mmHg",
-        glucose: "98 mg/dL",
+        dob: "1967-11-05",
+        age: 59,
+        gender: "Male",
+        bloodType: "B+",
+        weight: "91 kg (200 lbs)",
+        height: "183 cm (6'0\")",
+        bmi: "BMI 27.2 (Overweight I)",
+        conditions: ["Hypertension", "Hyperlipidemia", "Pre-diabetes"],
+        allergies: ["No Known Drug Allergies (NKDA)"],
+        riskLevel: "stable",
         adherence: "96%",
-        refill: "30 Pills Left",
+        streak: "28-Day Perfect Streak",
+        bp: "118 / 74 mmHg",
+        bpCat: "AHA Category: Normal Optimal",
+        glucose: "98 mg/dL",
+        pulse: "68 BPM",
+        caregiverName: "Elena Davis (Spouse)",
+        caregiverPhone: "+1 (555) 774-3321",
+        medications: [
+          { id: "m-301", name: "Losartan Potassium", dosage: "50mg", form: "Tablet", times: "08:00", stock: 55, instructions: "Take once daily in morning" },
+          { id: "m-302", name: "Rosuvastatin", dosage: "10mg", form: "Tablet", times: "21:00", stock: 40, instructions: "Take in the evening" }
+        ]
       }
     ];
 
-    function selectPatient(index) {
-      const items = document.querySelectorAll('.patient-item');
-      items.forEach((item, i) => {
-        if (i === index) item.classList.add('active');
-        else item.classList.remove('active');
-      });
+    // Initialize or load from LocalStorage
+    let patients = [];
+    try {
+      const stored = localStorage.getItem('pill_guardian_web_patients');
+      patients = stored ? JSON.parse(stored) : INITIAL_PATIENTS;
+    } catch {
+      patients = INITIAL_PATIENTS;
+    }
 
-      const p = patients[index];
+    let currentPatientIndex = 0;
+    let currentRiskFilter = 'all';
+    let currentAdjustMedId = null;
+
+    function savePatients() {
+      try {
+        localStorage.setItem('pill_guardian_web_patients', JSON.stringify(patients));
+      } catch (e) {
+        console.warn('Storage save error:', e);
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toastMessage');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById('patientList');
+      const q = document.getElementById('searchPatient').value.toLowerCase();
+      list.innerHTML = '';
+
+      patients.forEach((p, idx) => {
+        const matchesSearch = p.name.toLowerCase().includes(q) || p.conditions.some(c => c.toLowerCase().includes(q));
+        const matchesRisk = currentRiskFilter === 'all' || p.riskLevel === currentRiskFilter;
+        if (!matchesSearch || !matchesRisk) return;
+
+        const badgeClass = p.riskLevel === 'high' ? 'badge-high' : p.riskLevel === 'medium' ? 'badge-medium' : 'badge-stable';
+        const activeClass = idx === currentPatientIndex ? 'active' : '';
+
+        const div = document.createElement('div');
+        div.className = `patient-item ${activeClass}`;
+        div.onclick = () => selectPatient(idx);
+        div.innerHTML = `
+          <div class="patient-name-row">
+            <span class="patient-name">${p.name}</span>
+            <span class="badge ${badgeClass}">${p.riskLevel}</span>
+          </div>
+          <div class="patient-meta">Age ${p.age} • ${p.conditions[0]}</div>
+          <div class="patient-sub-stats">
+            <span>BP: ${p.bp.split(' ')[0]}</span>
+            <span>• ${p.adherence} Adherence</span>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function selectPatient(idx) {
+      currentPatientIndex = idx;
+      renderSidebar();
+      renderPatientDetails();
+    }
+
+    function setRiskFilter(filter, elem) {
+      currentRiskFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      elem.classList.add('active');
+      renderSidebar();
+    }
+
+    function filterPatients() {
+      renderSidebar();
+    }
+
+    function renderPatientDetails() {
+      const p = patients[currentPatientIndex];
+      if (!p) return;
+
       document.getElementById('profName').innerText = p.name;
-      document.getElementById('profMeta').innerHTML = p.meta;
-      document.getElementById('valBP').innerText = p.bp;
-      document.getElementById('valGlucose').innerText = p.glucose;
+      document.getElementById('profMeta').innerHTML = `DOB: ${p.dob} (Age ${p.age}) • Gender: ${p.gender} • Blood Type: <strong>${p.bloodType}</strong>`;
+      document.getElementById('profBio').innerText = `Height: ${p.height} • Weight: ${p.weight}`;
+
+      // Conditions
+      const condContainer = document.getElementById('profConditions');
+      condContainer.innerHTML = p.conditions.map(c => `<span class="tag-condition">${c}</span>`).join('');
+
+      // Allergies
+      const allgContainer = document.getElementById('profAllergies');
+      allgContainer.innerHTML = p.allergies.map(a => `<span class="tag-allergy">⚠️ ${a}</span>`).join('');
+
+      // Caregiver
+      document.getElementById('profCaregiverName').innerText = p.caregiverName;
+      document.getElementById('profCaregiverPhone').innerText = `📞 ${p.caregiverPhone}`;
+
+      // KPIs & Vitals
       document.getElementById('kpiAdherence').innerText = p.adherence;
-      document.getElementById('kpiRefill').innerText = p.refill;
+      document.getElementById('kpiStreak').innerText = p.streak;
+      document.getElementById('kpiMedCount').innerText = `${p.medications.length} Meds`;
+      document.getElementById('valBP').innerText = p.bp;
+      document.getElementById('valBPCat').innerText = p.bpCat;
+      document.getElementById('valGlucose').innerText = p.glucose;
+      document.getElementById('valPulse').innerText = p.pulse;
+      document.getElementById('valWeight').innerText = p.weight.split(' ')[0] + ' kg';
+      document.getElementById('valBMI').innerText = p.bmi;
+
+      // Drug Interaction box toggle
+      const alertBox = document.getElementById('interactionAlertBox');
+      alertBox.style.display = p.id === 'pat-1' ? 'block' : 'none';
+
+      // Prescriptions Table
+      const tbody = document.getElementById('medTableBody');
+      tbody.innerHTML = '';
+      document.getElementById('activePrescriptionCount').innerText = `(${p.medications.length} Active)`;
+
+      p.medications.forEach(m => {
+        const stockStyle = m.stock <= 7 ? 'color:#b91c1c; font-weight:800;' : 'font-weight:700;';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${m.name}</strong> <span class="med-badge">${m.form}</span><div style="font-size:11px; color:var(--muted);">${m.instructions}</div></td>
+          <td><strong style="color:var(--primary);">${m.dosage}</strong></td>
+          <td>${m.times}</td>
+          <td><span style="${stockStyle}">${m.stock} left</span></td>
+          <td class="actions-cell">
+            <button class="btn btn-outline btn-sm" onclick="openAdjustDosageModal('${m.id}')">✏️ Adjust Dose</button>
+            <button class="btn btn-danger btn-sm" onclick="discontinueMedication('${m.id}')">🛑 Discontinue</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Modal: Add Prescription
+    function openAddPrescriptionModal() {
+      const p = patients[currentPatientIndex];
+      document.getElementById('addModalPatientSub').innerText = `Authorizing for: ${p.name}`;
+      document.getElementById('newMedName').value = '';
+      document.getElementById('newMedDosage').value = '';
+      document.getElementById('newMedInstructions').value = '';
+      document.getElementById('newMedTimes').value = '08:00, 20:00';
+      document.getElementById('newMedStock').value = '60';
+      document.getElementById('addPrescriptionModal').style.display = 'flex';
+    }
+
+    function closeAddPrescriptionModal() {
+      document.getElementById('addPrescriptionModal').style.display = 'none';
+    }
+
+    function saveNewPrescription() {
+      const name = document.getElementById('newMedName').value.trim();
+      const dosage = document.getElementById('newMedDosage').value.trim();
+      const form = document.getElementById('newMedForm').value;
+      const times = document.getElementById('newMedTimes').value.trim();
+      const instructions = document.getElementById('newMedInstructions').value.trim() || 'Take as directed by doctor';
+      const stock = parseInt(document.getElementById('newMedStock').value, 10) || 30;
+
+      if (!name || !dosage) {
+        alert('Please enter medication name and dosage.');
+        return;
+      }
+
+      const p = patients[currentPatientIndex];
+      const newMed = {
+        id: `med-${Date.now()}`,
+        name,
+        dosage,
+        form,
+        times,
+        stock,
+        instructions
+      };
+
+      p.medications.unshift(newMed);
+      savePatients();
+      closeAddPrescriptionModal();
+      renderPatientDetails();
+      showToast(`Prescription for ${name} (${dosage}) authorized for ${p.name}. Synchronized to patient phone.`);
+    }
+
+    // Modal: Adjust Dosage
+    function openAdjustDosageModal(medId) {
+      currentAdjustMedId = medId;
+      const p = patients[currentPatientIndex];
+      const med = p.medications.find(m => m.id === medId);
+      if (!med) return;
+
+      document.getElementById('adjustModalSub').innerText = `Modifying ${med.name} for ${p.name}`;
+      document.getElementById('adjustDosageInput').value = med.dosage;
+      document.getElementById('adjustInstructionsInput').value = med.instructions;
+      document.getElementById('adjustDosageModal').style.display = 'flex';
+    }
+
+    function closeAdjustDosageModal() {
+      document.getElementById('adjustDosageModal').style.display = 'none';
+      currentAdjustMedId = null;
+    }
+
+    function saveAdjustedDosage() {
+      if (!currentAdjustMedId) return;
+      const newDose = document.getElementById('adjustDosageInput').value.trim();
+      const newInstr = document.getElementById('adjustInstructionsInput').value.trim();
+
+      if (!newDose) {
+        alert('Dosage cannot be empty.');
+        return;
+      }
+
+      const p = patients[currentPatientIndex];
+      const med = p.medications.find(m => m.id === currentAdjustMedId);
+      if (med) {
+        med.dosage = newDose;
+        if (newInstr) med.instructions = newInstr;
+        savePatients();
+        closeAdjustDosageModal();
+        renderPatientDetails();
+        showToast(`Updated ${med.name} dosage to ${newDose} for ${p.name}. Schedule updated.`);
+      }
+    }
+
+    // Discontinue Medication
+    function discontinueMedication(medId) {
+      const p = patients[currentPatientIndex];
+      const med = p.medications.find(m => m.id === medId);
+      if (!med) return;
+
+      if (confirm(`Are you sure you want to discontinue ${med.name} (${med.dosage}) for ${p.name}?`)) {
+        p.medications = p.medications.filter(m => m.id !== medId);
+        savePatients();
+        renderPatientDetails();
+        showToast(`${med.name} has been discontinued from ${p.name}'s regimen.`);
+      }
     }
 
     function sendDirective() {
       const text = document.getElementById('directiveText').value.trim();
       if (!text) {
-        alert('Please enter a clinical directive.');
+        alert('Please enter a clinical directive note.');
         return;
       }
-      alert('Clinical directive dispatched successfully to patient app:\n\n"' + text + '"');
+      const p = patients[currentPatientIndex];
+      showToast(`Directive dispatched to ${p.name}'s mobile device:\n"${text}"`);
       document.getElementById('directiveText').value = '';
     }
 
-    function filterPatients() {
-      const q = document.getElementById('searchPatient').value.toLowerCase();
-      const items = document.querySelectorAll('.patient-item');
-      items.forEach(item => {
-        const text = item.innerText.toLowerCase();
-        item.style.display = text.includes(q) ? 'block' : 'none';
-      });
+    function exportAuditDossier() {
+      const p = patients[currentPatientIndex];
+      showToast(`Generating full PDF audit dossier for ${p.name}...`);
+      window.print();
     }
+
+    // Initialize View
+    renderSidebar();
+    renderPatientDetails();
   </script>
 </body>
 </html>

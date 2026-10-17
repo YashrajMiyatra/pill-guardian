@@ -23,7 +23,7 @@ interface AuthContextType {
   isDemoMode: boolean;
   signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, pass: string, name: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: (role?: UserRole) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   loginAsDemoUser: (role?: UserRole) => Promise<void>;
   authenticateWithBiometrics: () => Promise<boolean>;
@@ -174,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+  const signInWithGoogle = async (role: UserRole = 'patient'): Promise<{ success: boolean; error?: string }> => {
     try {
       if (isSupabaseConfigured()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -192,11 +192,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Complete Google login and persist session
       await AsyncStorage.removeItem(DEMO_AUTH_KEY);
+      await AsyncStorage.setItem(USER_ROLE_KEY, role);
       const googleUser: AuthUser = {
         id: `google-user-${Date.now()}`,
         email: 'yashraj.miyatra@gmail.com',
-        fullName: 'Yashraj Miyatra (Google)',
-        role: 'patient',
+        fullName: role === 'doctor' ? 'Dr. Yashraj Miyatra, M.D.' : 'Yashraj Miyatra (Google)',
+        role,
         isDemo: false,
       };
       setUser(googleUser);
