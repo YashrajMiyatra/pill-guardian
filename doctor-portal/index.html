@@ -433,7 +433,13 @@
   <!-- Notification Toast -->
   <div class="toast" id="toastMessage"></div>
 
+  <!-- Supabase Cloud Sync CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    const SUPABASE_URL = 'https://xhqzpmrrihwjwkkccqkv.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable__n3FPbYiUWxole02NiAK7Q_K33tEb-Z';
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
     const INITIAL_PATIENTS = [
       {
         id: "pat-1",
@@ -696,6 +702,26 @@
       closeAddPrescriptionModal();
       renderPatientDetails();
       showToast(`Prescription for ${name} (${dosage}) authorized for ${p.name}. Synchronized to patient phone.`);
+
+      if (supabaseClient) {
+        supabaseClient.from('medications').insert({
+          name: newMed.name,
+          dosage: newMed.dosage,
+          form: newMed.form.toLowerCase(),
+          instructions: newMed.instructions,
+          frequency: 'daily',
+          times: [newMed.times],
+          stock_current: newMed.stock,
+          stock_refill_alert: 7,
+          prescribed_by: 'Dr. Robert Henderson, M.D.',
+          is_active: true,
+          created_at: new Date().toISOString()
+        }).then(res => {
+          console.log('✓ Cloud Synced to Supabase:', res);
+        }).catch(err => {
+          console.warn('Supabase sync notice:', err);
+        });
+      }
     }
 
     // Modal: Adjust Dosage
@@ -766,6 +792,19 @@
       const p = patients[currentPatientIndex];
       showToast(`Directive dispatched to ${p.name}'s mobile device:\n"${text}"`);
       document.getElementById('directiveText').value = '';
+
+      if (supabaseClient) {
+        supabaseClient.from('caregiver_alerts').insert({
+          event_type: 'vitals_alert',
+          title: `Dr. Henderson Order for ${p.name}`,
+          description: text,
+          severity: 'warning'
+        }).then(res => {
+          console.log('✓ Directive pushed to Supabase:', res);
+        }).catch(err => {
+          console.warn('Supabase notice:', err);
+        });
+      }
     }
 
     function exportAuditDossier() {

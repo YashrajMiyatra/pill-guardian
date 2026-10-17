@@ -13,6 +13,24 @@
         "buildType": "apk"
       }
     },
+    "preview-patient": {
+      "distribution": "internal",
+      "env": {
+        "APP_VARIANT": "patient"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview-doctor": {
+      "distribution": "internal",
+      "env": {
+        "APP_VARIANT": "doctor"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"

@@ -13,13 +13,17 @@ import {
   Alert,
 } from 'react-native';
 import { Mail, Lock, User, Fingerprint, ShieldCheck, Eye, EyeOff, Sparkles, Stethoscope } from 'lucide-react-native';
+import Constants from 'expo-constants';
 import { useAuth } from '../context/AuthContext';
 import { BiometricService } from '../services/biometrics';
 import { Colors } from '../theme/colors';
 
 export const AuthScreen: React.FC = () => {
   const { signIn, signUp, signInWithGoogle, loginAsDemoUser, authenticateWithBiometrics } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor'>('patient');
+  const isDoctorVariant = Constants.expoConfig?.extra?.appVariant === 'doctor';
+  const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor'>(
+    isDoctorVariant ? 'doctor' : 'patient'
+  );
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -85,8 +89,14 @@ export const AuthScreen: React.FC = () => {
             style={styles.logoImage}
             resizeMode="contain"
           />
-          <Text style={styles.appName}>PillGuardian</Text>
-          <Text style={styles.appTagline}>Chronic Care & Medication Companion</Text>
+          <Text style={styles.appName}>
+            {selectedRole === 'doctor' ? 'PillGuardian MD' : 'PillGuardian'}
+          </Text>
+          <Text style={styles.appTagline}>
+            {selectedRole === 'doctor'
+              ? 'Clinical Provider & RPM Workstation'
+              : 'Chronic Care & Medication Companion'}
+          </Text>
           <View style={styles.securityPill}>
             <ShieldCheck size={12} color="#0D9488" />
             <Text style={styles.securityText}>HIPAA-Compliant Device Vault</Text>

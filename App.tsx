@@ -20,12 +20,15 @@ import { CabinetScreen } from './src/screens/CabinetScreen';
 import { VitalsScreen } from './src/screens/VitalsScreen';
 import { CaregiverScreen } from './src/screens/CaregiverScreen';
 import { DoctorDashboardScreen } from './src/screens/DoctorDashboardScreen';
+import Constants from 'expo-constants';
 import { Colors } from './src/theme/colors';
 
 function MainApp() {
   const { user, isLoading, isDemoMode, switchRole, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('today');
   const [isStorageReady, setIsStorageReady] = useState(false);
+
+  const isDoctorVariant = Constants.expoConfig?.extra?.appVariant === 'doctor';
 
   useEffect(() => {
     async function prepare() {
@@ -48,8 +51,12 @@ function MainApp() {
           style={{ width: 88, height: 88, borderRadius: 20 }}
           resizeMode="contain"
         />
-        <Text style={styles.splashTitle}>PillGuardian</Text>
-        <Text style={styles.splashSub}>Personal Chronic Care Companion</Text>
+        <Text style={styles.splashTitle}>
+          {isDoctorVariant ? 'PillGuardian MD' : 'PillGuardian'}
+        </Text>
+        <Text style={styles.splashSub}>
+          {isDoctorVariant ? 'Clinical Provider & RPM Platform' : 'Personal Chronic Care Companion'}
+        </Text>
       </View>
     );
   }
@@ -59,8 +66,8 @@ function MainApp() {
     return <AuthScreen />;
   }
 
-  // If user is a Doctor / Clinician, show Doctor Care Portal
-  if (user.role === 'doctor') {
+  // If user is a Doctor or the installed build is PillGuardian MD
+  if (user.role === 'doctor' || isDoctorVariant) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
