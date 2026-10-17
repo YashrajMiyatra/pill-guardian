@@ -29,108 +29,122 @@
     body { background-color: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
     /* Sidebar */
-    .sidebar { width: 320px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-    .sidebar-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-    .brand-icon { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #0284c7, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 20px; }
-    .brand-title { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1.2; }
-    .brand-sub { font-size: 10px; color: var(--teal); font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; }
+    .sidebar { width: 330px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sidebar-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand-wrap { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #0284c7, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 20px; }
+    .brand-title { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.2; }
+    .brand-sub { font-size: 10px; color: var(--teal); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .patient-search { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .search-input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 13px; outline: none; }
+    .patient-search { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+    .search-input { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 13px; outline: none; }
     .search-input:focus { border-color: var(--teal); }
 
-    .filter-chips { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: #fafafa; }
-    .filter-chip { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--muted); }
+    .filter-chips { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: #fafafa; overflow-x: auto; }
+    .filter-chip { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--muted); white-space: nowrap; }
     .filter-chip.active { background: var(--teal); color: white; border-color: var(--teal); }
+    .filter-chip.chip-pending { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+    .filter-chip.chip-pending.active { background: #d97706; color: white; border-color: #d97706; }
 
-    .patient-list { flex: 1; overflow-y: auto; padding: 12px; }
-    .patient-item { padding: 12px 14px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s; }
+    .patient-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .patient-item { padding: 11px 13px; border-radius: 10px; margin-bottom: 7px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s; }
     .patient-item:hover { background: var(--bg); }
     .patient-item.active { background: #f0fdfa; border-color: var(--teal); }
     .patient-name-row { display: flex; justify-content: space-between; align-items: center; }
-    .patient-name { font-weight: 800; font-size: 14px; color: var(--text); }
-    .badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+    .patient-name { font-weight: 800; font-size: 13px; color: var(--text); }
+    .badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
     .badge-high { background: var(--danger-light); color: #b91c1c; }
     .badge-medium { background: var(--warning-light); color: #b45309; }
     .badge-stable { background: var(--success-light); color: #15803d; }
-    .patient-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .patient-sub-stats { font-size: 11px; font-weight: 600; color: var(--primary); margin-top: 4px; display: flex; gap: 8px; }
+    .badge-pending { background: var(--warning-light); color: #b45309; border: 1px solid #fde68a; }
+    .badge-approved { background: var(--success-light); color: #15803d; border: 1px solid #bbf7d0; }
+    .patient-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .patient-sub-stats { font-size: 11px; font-weight: 600; color: var(--primary); margin-top: 3px; display: flex; gap: 8px; }
 
     /* Main Content */
     .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-    .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; justify-content: space-between; align-items: center; }
+    .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 28px; display: flex; justify-content: space-between; align-items: center; }
     .doc-info { display: flex; align-items: center; gap: 12px; }
-    .doc-avatar { width: 44px; height: 44px; border-radius: 22px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; color: var(--teal); font-weight: 800; font-size: 16px; }
-    .doc-name { font-size: 16px; font-weight: 800; color: var(--text); }
-    .doc-dept { font-size: 12px; color: var(--muted); }
+    .doc-avatar { width: 42px; height: 42px; border-radius: 21px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; color: var(--teal); font-weight: 800; font-size: 15px; }
+    .doc-name { font-size: 15px; font-weight: 800; color: var(--text); }
+    .doc-dept { font-size: 11px; color: var(--muted); }
     .topbar-actions { display: flex; align-items: center; gap: 10px; }
     .btn { padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
     .btn-primary { background: var(--teal); color: white; }
     .btn-primary:hover { background: #0f766e; }
     .btn-blue { background: var(--primary); color: white; }
     .btn-blue:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
     .btn-outline { background: white; border: 1px solid var(--border); color: var(--text); }
     .btn-danger { background: var(--danger-light); color: #b91c1c; border: 1px solid #fecaca; }
     .btn-sm { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
 
-    .google-sso-badge { display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #1e293b; }
+    .google-sso-badge { display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #1e293b; }
     .google-g-icon { width: 16px; height: 16px; border-radius: 8px; background: #ea4335; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; }
 
-    .content-area { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+    .content-area { padding: 20px 28px; display: flex; flex-direction: column; gap: 18px; }
+
+    /* Pending Alerts Banner */
+    .pending-alert-box { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .pending-alert-top { display: flex; align-items: center; justify-content: space-between; }
+    .pending-alert-title { font-size: 13px; font-weight: 800; color: #b45309; display: flex; align-items: center; gap: 8px; }
+    .pending-alert-sub { font-size: 11px; color: #92400e; }
+    .pending-card-row { display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; }
 
     /* KPI Row */
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
     .kpi-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); margin-top: 6px; }
-    .kpi-sub { font-size: 12px; color: var(--teal); font-weight: 600; margin-top: 4px; }
+    .kpi-value { font-size: 24px; font-weight: 800; color: var(--text); margin-top: 4px; }
+    .kpi-sub { font-size: 11px; color: var(--teal); font-weight: 600; margin-top: 3px; }
 
     /* Dossier Grid */
-    .dossier-grid { display: grid; grid-template-columns: 2fr 1.1fr; gap: 20px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
-    .card-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .dossier-grid { display: grid; grid-template-columns: 2fr 1.1fr; gap: 18px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    .card-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
     /* Interaction Alert */
-    .alert-box { background: var(--danger-light); border: 1.5px solid #fecaca; border-radius: 10px; padding: 14px; }
-    .alert-box-title { font-size: 13px; font-weight: 800; color: #b91c1c; display: flex; align-items: center; gap: 6px; }
-    .alert-box-desc { font-size: 12px; color: #7f1d1d; margin-top: 4px; line-height: 1.4; }
-    .alert-box-rec { font-size: 12px; color: #0f766e; font-weight: 700; margin-top: 6px; }
+    .alert-box { background: var(--danger-light); border: 1.5px solid #fecaca; border-radius: 10px; padding: 12px; }
+    .alert-box-title { font-size: 12px; font-weight: 800; color: #b91c1c; display: flex; align-items: center; gap: 6px; }
+    .alert-box-desc { font-size: 11px; color: #7f1d1d; margin-top: 3px; line-height: 1.4; }
+    .alert-box-rec { font-size: 11px; color: #0f766e; font-weight: 700; margin-top: 4px; }
 
     /* Medication Table */
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    td { padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .med-badge { background: #f1f5f9; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .med-badge { background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: 600; }
     .actions-cell { display: flex; gap: 6px; align-items: center; }
 
     /* Vitals Box */
-    .vitals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-    .vital-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
-    .vital-stat-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .vital-stat-value { font-size: 20px; font-weight: 800; color: var(--text); margin: 4px 0; }
-    .vital-stat-target { font-size: 11px; color: var(--teal); font-weight: 600; }
+    .vitals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .vital-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+    .vital-stat-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .vital-stat-value { font-size: 18px; font-weight: 800; color: var(--text); margin: 3px 0; }
+    .vital-stat-target { font-size: 10px; color: var(--teal); font-weight: 600; }
 
     /* Directives Box */
-    .directive-box { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-    .directive-textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px; min-height: 80px; resize: none; outline: none; background: var(--bg); }
+    .directive-box { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .directive-textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; min-height: 70px; resize: none; outline: none; background: var(--bg); }
     .directive-textarea:focus { border-color: var(--teal); }
 
-    .tag-allergy { background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
-    .tag-condition { background: #f1f5f9; color: #334155; font-weight: 600; padding: 3px 8px; border-radius: 4px; font-size: 11px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+    .tag-allergy { background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 10px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+    .tag-condition { background: #f1f5f9; color: #334155; font-weight: 600; padding: 2px 6px; border-radius: 4px; font-size: 10px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
 
-    /* Modal */
-    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
-    .modal { background: white; border-radius: 14px; width: 480px; max-width: 95%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
-    .modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
-    .form-group { margin-bottom: 12px; }
-    .form-label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 4px; }
-    .form-control { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+    /* Modals */
+    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.55); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: white; border-radius: 14px; width: 520px; max-width: 95%; max-height: 90vh; overflow-y: auto; padding: 22px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); }
+    .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+    .modal-sub { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+    .form-group { margin-bottom: 10px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-label { display: block; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 3px; }
+    .form-control { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; outline: none; }
     .form-control:focus { border-color: var(--teal); }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
     /* Toast */
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 200; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white; padding: 12px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; z-index: 200; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); }
   </style>
 </head>
 <body>
@@ -138,19 +152,23 @@
   <!-- Sidebar: Patient Cohort -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="brand-icon">P</div>
-      <div>
-        <div class="brand-title">PillGuardian™</div>
-        <div class="brand-sub">Clinical RPM Care Portal</div>
+      <div class="brand-wrap">
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">PillGuardian™</div>
+          <div class="brand-sub">Clinical RPM Care Portal</div>
+        </div>
       </div>
     </div>
 
     <div class="patient-search">
-      <input type="text" class="search-input" id="searchPatient" placeholder="🔍 Search patient name, condition..." onkeyup="filterPatients()" />
+      <input type="text" class="search-input" id="searchPatient" placeholder="🔍 Search patient, email, condition..." onkeyup="filterPatients()" />
+      <button class="btn btn-primary btn-sm" style="width:100%; justify-content:center;" onclick="openEnrollPatientModal()">+ Enroll New Patient</button>
     </div>
 
     <div class="filter-chips">
-      <div class="filter-chip active" onclick="setRiskFilter('all', this)">ALL (3)</div>
+      <div class="filter-chip active" id="chipAll" onclick="setRiskFilter('all', this)">ALL (<span id="countAll">4</span>)</div>
+      <div class="filter-chip chip-pending" id="chipPending" onclick="setRiskFilter('pending', this)">PENDING (<span id="countPending">1</span>)</div>
       <div class="filter-chip" onclick="setRiskFilter('high', this)">HIGH RISK</div>
       <div class="filter-chip" onclick="setRiskFilter('medium', this)">MEDIUM</div>
       <div class="filter-chip" onclick="setRiskFilter('stable', this)">STABLE</div>
@@ -175,23 +193,27 @@
           <div class="google-g-icon">G</div>
           <span>Google Clinician SSO Active</span>
         </div>
+        <button class="btn btn-primary" onclick="openEnrollPatientModal()">+ Enroll Patient</button>
         <button class="btn btn-outline" onclick="window.print()">🖨️ Print Chart</button>
         <button class="btn btn-blue" onclick="exportAuditDossier()">📄 Export PDF Dossier</button>
       </div>
     </header>
 
     <div class="content-area">
+      <!-- Pending Access Requests Notification Banner -->
+      <div id="pendingAlertsContainer"></div>
+
       <!-- KPI Row -->
       <div class="kpi-row">
         <div class="kpi-card">
-          <div class="kpi-title">Cohort Patients</div>
-          <div class="kpi-value" id="kpiPatients">48</div>
+          <div class="kpi-title">Enrolled Patients</div>
+          <div class="kpi-value" id="kpiPatients">4</div>
           <div class="kpi-sub">Remote Monitoring Enrolled</div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-title">Critical Spike Alerts</div>
-          <div class="kpi-value" style="color:#b45309;" id="kpiAlerts">3</div>
+          <div class="kpi-title">Pending Approvals</div>
+          <div class="kpi-value" style="color:#b45309;" id="kpiPendingCount">1</div>
           <div class="kpi-sub" style="color:#b45309;">Requires Physician Review</div>
         </div>
 
@@ -211,7 +233,7 @@
       <!-- Dossier Grid -->
       <div class="dossier-grid">
         <!-- Left: Prescriptions & Vitals -->
-        <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; flex-direction:column; gap:18px;">
           <!-- Clinical Drug Interaction Warning -->
           <div class="alert-box" id="interactionAlertBox">
             <div class="alert-box-title">⚠️ Clinical Drug Interaction Detected: Lisinopril ↔ OTC Ibuprofen / NSAIDs</div>
@@ -294,54 +316,57 @@
             </div>
             <div style="margin-top:12px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
               <span style="font-size:12px; font-weight:700; color:#166534;">Est. Monthly Practice Revenue per Enrolled Patient:</span>
-              <span style="font-size:16px; font-weight:800; color:#15803d;">$119.40 / patient / mo</span>
+              <span style="font-size:15px; font-weight:800; color:#15803d;">$119.40 / patient / mo</span>
             </div>
           </div>
         </div>
 
         <!-- Right: Patient Profile & Directives -->
-        <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; flex-direction:column; gap:18px;">
           <!-- Patient Summary Card -->
           <div class="card">
             <div class="card-title">Patient Medical Profile</div>
-            <div style="margin-bottom:14px;">
-              <div style="font-size:18px; font-weight:800;" id="profName">Arthur Bennett</div>
-              <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="profMeta">
+            <div style="margin-bottom:12px;">
+              <div style="font-size:17px; font-weight:800;" id="profName">Arthur Bennett</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profMeta">
                 DOB: 1958-03-14 (Age 68) • Gender: Male • Blood Type: <strong>O+</strong>
               </div>
-              <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="profBio">
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profBio">
                 Height: 178 cm (5'10") • Weight: 84 kg (185 lbs)
               </div>
             </div>
 
-            <div style="margin-bottom:12px;">
-              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px;">Diagnosed Conditions:</div>
+            <!-- Login Access & Authorization Widget -->
+            <div id="profApprovalCard" style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px;"></div>
+
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:3px;">Diagnosed Conditions:</div>
               <div id="profConditions"></div>
             </div>
 
-            <div style="margin-bottom:12px;">
-              <div style="font-size:11px; font-weight:700; color:#b91c1c; text-transform:uppercase; margin-bottom:4px;">Critical Drug Allergies:</div>
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px; font-weight:700; color:#b91c1c; text-transform:uppercase; margin-bottom:3px;">Critical Drug Allergies:</div>
               <div id="profAllergies"></div>
             </div>
 
-            <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
-              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Primary Proxy / Caregiver:</div>
-              <div style="font-size:13px; font-weight:700; margin-top:2px;" id="profCaregiverName">Sarah Bennett (Daughter)</div>
-              <div style="font-size:12px; color:var(--muted); margin-top:2px;" id="profCaregiverPhone">📞 +1 (555) 902-1144</div>
+            <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+              <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase;">Primary Proxy / Caregiver:</div>
+              <div style="font-size:12px; font-weight:700; margin-top:2px;" id="profCaregiverName">Sarah Bennett (Daughter)</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profCaregiverPhone">📞 +1 (555) 902-1144</div>
             </div>
           </div>
 
           <!-- Push Directives -->
           <div class="card">
             <div class="card-title">Push Clinical Directive to Patient Device</div>
-            <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">
+            <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">
               Directives appear instantly as a high-priority push directive inside the patient's PillGuardian mobile companion.
             </div>
 
             <!-- Quick Presets -->
-            <div style="margin-bottom:12px;">
-              <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">1-Tap Quick Clinical Presets:</div>
-              <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">1-Tap Quick Clinical Presets:</div>
+              <div style="display:flex; flex-direction:column; gap:5px;">
                 <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Titrate Lisinopril to 20mg PO daily for blood pressure stabilization. Re-check BP in 7 days.')">💊 Titrate Lisinopril to 20mg daily</button>
                 <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Order Fasting Metabolic Panel (HbA1c, BUN, Serum Creatinine, eGFR). Schedule with lab.')">🧪 Order Fasting Metabolic Panel</button>
                 <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Restrict dietary sodium intake to <2,000 mg/day. Log resting morning weight daily.')">🧂 Restrict Sodium to <2,000 mg/day</button>
@@ -358,6 +383,113 @@
       </div>
     </div>
   </main>
+
+  <!-- MODAL: Enroll New Patient -->
+  <div class="modal-backdrop" id="enrollPatientModal">
+    <div class="modal">
+      <div class="modal-title">Enroll New Patient Record</div>
+      <div class="modal-sub">Onboard patient to remote monitoring and configure companion app authorization</div>
+
+      <div class="form-group">
+        <label class="form-label">Patient Full Legal Name *</label>
+        <input type="text" class="form-control" id="enrollName" placeholder="e.g. Chloe Chen, Robert Bennett" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Account Email Address * (Used for Patient App Login)</label>
+        <input type="email" class="form-control" id="enrollEmail" placeholder="e.g. chloe.chen@example.com" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Contact Phone</label>
+          <input type="text" class="form-control" id="enrollPhone" placeholder="+1 (555) 000-0000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date of Birth (YYYY-MM-DD)</label>
+          <input type="text" class="form-control" id="enrollDOB" value="1982-04-18" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-control" id="enrollGender">
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Blood Type</label>
+          <select class="form-control" id="enrollBloodType">
+            <option value="O+">O+</option>
+            <option value="A+">A+</option>
+            <option value="B+">B+</option>
+            <option value="AB+">AB+</option>
+            <option value="O-">O-</option>
+            <option value="A-">A-</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Height</label>
+          <input type="text" class="form-control" id="enrollHeight" value="168 cm (5'6&quot;)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Weight</label>
+          <input type="text" class="form-control" id="enrollWeight" value="68 kg (150 lbs)" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Diagnosed Chronic Conditions (Comma-separated)</label>
+        <input type="text" class="form-control" id="enrollConditions" value="Hypertension, Mild Asthma" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Critical Drug Allergies (Comma-separated)</label>
+        <input type="text" class="form-control" id="enrollAllergies" value="Penicillin (Anaphylaxis)" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Designated Caregiver Name</label>
+          <input type="text" class="form-control" id="enrollCaregiverName" placeholder="e.g. Kevin Chen (Spouse)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Caregiver Phone</label>
+          <input type="text" class="form-control" id="enrollCaregiverPhone" placeholder="+1 (555) 234-8890" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Initial Risk Level</label>
+        <select class="form-control" id="enrollRisk">
+          <option value="stable">Stable (Routine Follow-up)</option>
+          <option value="medium" selected>Medium (Hypertension / Dosing Titration)</option>
+          <option value="high">High Risk (Cardiac / Critical Alerts)</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:8px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:700; color:#166534;">
+          <input type="checkbox" id="enrollPreApprove" checked style="width:16px; height:16px;" />
+          <span>✓ Authorize App Login Access Immediately</span>
+        </label>
+        <div style="font-size:10px; color:#15803d; margin-top:4px;">
+          When checked, patient can instantly log into the mobile companion app with their email without waiting for approval.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEnrollPatientModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewPatient()">Enroll Patient into RPM Roster</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL: Add Prescription -->
   <div class="modal-backdrop" id="addPrescriptionModal">
@@ -444,6 +576,7 @@
       {
         id: "pat-1",
         name: "Arthur Bennett",
+        email: "arthur.bennett@example.com",
         dob: "1958-03-14",
         age: 68,
         gender: "Male",
@@ -454,6 +587,9 @@
         conditions: ["Type 2 Diabetes", "Essential Hypertension", "Mild Persistent Asthma"],
         allergies: ["Penicillin (Severe Anaphylaxis)", "Sulfa Drugs (Rash)"],
         riskLevel: "medium",
+        approvalStatus: "approved",
+        approvedBy: "Dr. Robert Henderson, M.D.",
+        registeredAt: "2026-10-01T10:00:00Z",
         adherence: "85%",
         streak: "14-Day Consecutive Streak",
         bp: "122 / 78 mmHg",
@@ -472,6 +608,7 @@
       {
         id: "pat-2",
         name: "Eleanor Vance",
+        email: "eleanor.vance@example.com",
         dob: "1954-08-22",
         age: 72,
         gender: "Female",
@@ -482,6 +619,9 @@
         conditions: ["Congestive Heart Failure", "Atrial Fibrillation", "CKD Stage 2"],
         allergies: ["Aspirin (GI Bleeding)", "ACE Inhibitors (Severe Cough)"],
         riskLevel: "high",
+        approvalStatus: "approved",
+        approvedBy: "Dr. Robert Henderson, M.D.",
+        registeredAt: "2026-10-05T11:20:00Z",
         adherence: "64%",
         streak: "Missed Yesterday Evening",
         bp: "148 / 92 mmHg",
@@ -499,6 +639,7 @@
       {
         id: "pat-3",
         name: "Marcus Davis",
+        email: "marcus.davis@example.com",
         dob: "1967-11-05",
         age: 59,
         gender: "Male",
@@ -509,6 +650,9 @@
         conditions: ["Hypertension", "Hyperlipidemia", "Pre-diabetes"],
         allergies: ["No Known Drug Allergies (NKDA)"],
         riskLevel: "stable",
+        approvalStatus: "approved",
+        approvedBy: "Dr. Robert Henderson, M.D.",
+        registeredAt: "2026-10-10T15:45:00Z",
         adherence: "96%",
         streak: "28-Day Perfect Streak",
         bp: "118 / 74 mmHg",
@@ -521,13 +665,41 @@
           { id: "m-301", name: "Losartan Potassium", dosage: "50mg", form: "Tablet", times: "08:00", stock: 55, instructions: "Take once daily in morning" },
           { id: "m-302", name: "Rosuvastatin", dosage: "10mg", form: "Tablet", times: "21:00", stock: 40, instructions: "Take in the evening" }
         ]
+      },
+      {
+        id: "pat-4",
+        name: "Chloe Chen",
+        email: "chloe.chen@example.com",
+        dob: "1981-04-18",
+        age: 45,
+        gender: "Female",
+        bloodType: "AB+",
+        weight: "68 kg (150 lbs)",
+        height: "165 cm (5'5\")",
+        bmi: "BMI 25.0 (Normal)",
+        conditions: ["Gestational Diabetes Hx", "Mild Hypertension"],
+        allergies: ["Latex", "Ciprofloxacin"],
+        riskLevel: "medium",
+        approvalStatus: "pending",
+        registeredAt: "2026-10-17T08:10:00Z",
+        adherence: "78%",
+        streak: "3-Day Streak",
+        bp: "130 / 84 mmHg",
+        bpCat: "AHA Category: Pre-hypertension",
+        glucose: "115 mg/dL",
+        pulse: "76 BPM",
+        caregiverName: "Kevin Chen (Husband)",
+        caregiverPhone: "+1 (555) 234-8890",
+        medications: [
+          { id: "m-401", name: "Hydrochlorothiazide", dosage: "25mg", form: "Tablet", times: "08:00", stock: 30, instructions: "Take with breakfast" }
+        ]
       }
     ];
 
     // Initialize or load from LocalStorage
     let patients = [];
     try {
-      const stored = localStorage.getItem('pill_guardian_web_patients');
+      const stored = localStorage.getItem('pill_guardian_web_patients_v2');
       patients = stored ? JSON.parse(stored) : INITIAL_PATIENTS;
     } catch {
       patients = INITIAL_PATIENTS;
@@ -539,7 +711,7 @@
 
     function savePatients() {
       try {
-        localStorage.setItem('pill_guardian_web_patients', JSON.stringify(patients));
+        localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify(patients));
       } catch (e) {
         console.warn('Storage save error:', e);
       }
@@ -552,17 +724,77 @@
       setTimeout(() => { t.style.display = 'none'; }, 3500);
     }
 
+    function renderPendingAlerts() {
+      const container = document.getElementById('pendingAlertsContainer');
+      const pendingList = patients.filter(p => p.approvalStatus === 'pending');
+      const countPending = document.getElementById('countPending');
+      const kpiPending = document.getElementById('kpiPendingCount');
+      if (countPending) countPending.innerText = pendingList.length;
+      if (kpiPending) kpiPending.innerText = pendingList.length;
+      document.getElementById('kpiPatients').innerText = patients.length;
+      document.getElementById('countAll').innerText = patients.length;
+
+      if (pendingList.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = `
+        <div class="pending-alert-box">
+          <div class="pending-alert-top">
+            <div class="pending-alert-title">
+              <span>⏳</span>
+              <span>${pendingList.length} Patient Access Request${pendingList.length > 1 ? 's' : ''} Awaiting Physician Approval</span>
+            </div>
+            <button class="btn btn-success btn-sm" onclick="approveAllPending()">✓ Approve All (${pendingList.length})</button>
+          </div>
+          <div class="pending-alert-sub">
+            The following patients registered via the PillGuardian companion app. Authorize their accounts to unlock active dosing, vitals logging, and EHR synchronization.
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+      `;
+
+      pendingList.forEach(p => {
+        html += `
+          <div class="pending-card-row">
+            <div>
+              <strong style="font-size:13px;">${p.name}</strong>
+              <span style="font-size:11px; color:var(--muted); margin-left:8px;">${p.email} • ${p.conditions[0] || 'New Patient'}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-outline btn-sm" onclick="selectPatientById('${p.id}')">View Details</button>
+              <button class="btn btn-primary btn-sm" onclick="updatePatientApproval('${p.id}', 'approved')">✓ Authorize</button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></div>`;
+      container.innerHTML = html;
+    }
+
     function renderSidebar() {
       const list = document.getElementById('patientList');
       const q = document.getElementById('searchPatient').value.toLowerCase();
       list.innerHTML = '';
 
       patients.forEach((p, idx) => {
-        const matchesSearch = p.name.toLowerCase().includes(q) || p.conditions.some(c => c.toLowerCase().includes(q));
-        const matchesRisk = currentRiskFilter === 'all' || p.riskLevel === currentRiskFilter;
-        if (!matchesSearch || !matchesRisk) return;
+        const matchesSearch = p.name.toLowerCase().includes(q) ||
+          p.conditions.some(c => c.toLowerCase().includes(q)) ||
+          (p.email && p.email.toLowerCase().includes(q));
 
-        const badgeClass = p.riskLevel === 'high' ? 'badge-high' : p.riskLevel === 'medium' ? 'badge-medium' : 'badge-stable';
+        let matchesFilter = true;
+        if (currentRiskFilter === 'pending') {
+          matchesFilter = p.approvalStatus === 'pending';
+        } else if (currentRiskFilter !== 'all') {
+          matchesFilter = p.riskLevel === currentRiskFilter;
+        }
+
+        if (!matchesSearch || !matchesFilter) return;
+
+        const isPending = p.approvalStatus === 'pending';
+        const badgeClass = isPending ? 'badge-pending' : (p.riskLevel === 'high' ? 'badge-high' : p.riskLevel === 'medium' ? 'badge-medium' : 'badge-stable');
+        const badgeLabel = isPending ? 'PENDING' : p.riskLevel.toUpperCase();
         const activeClass = idx === currentPatientIndex ? 'active' : '';
 
         const div = document.createElement('div');
@@ -571,9 +803,9 @@
         div.innerHTML = `
           <div class="patient-name-row">
             <span class="patient-name">${p.name}</span>
-            <span class="badge ${badgeClass}">${p.riskLevel}</span>
+            <span class="badge ${badgeClass}">${badgeLabel}</span>
           </div>
-          <div class="patient-meta">Age ${p.age} • ${p.conditions[0]}</div>
+          <div class="patient-meta">${p.email || ''} • Age ${p.age} • ${p.conditions[0] || 'Care Monitoring'}</div>
           <div class="patient-sub-stats">
             <span>BP: ${p.bp.split(' ')[0]}</span>
             <span>• ${p.adherence} Adherence</span>
@@ -581,12 +813,21 @@
         `;
         list.appendChild(div);
       });
+
+      renderPendingAlerts();
     }
 
     function selectPatient(idx) {
       currentPatientIndex = idx;
       renderSidebar();
       renderPatientDetails();
+    }
+
+    function selectPatientById(patId) {
+      const idx = patients.findIndex(p => p.id === patId);
+      if (idx >= 0) {
+        selectPatient(idx);
+      }
     }
 
     function setRiskFilter(filter, elem) {
@@ -600,13 +841,78 @@
       renderSidebar();
     }
 
+    function updatePatientApproval(patId, status) {
+      const p = patients.find(item => item.id === patId);
+      if (!p) return;
+
+      p.approvalStatus = status;
+      if (status === 'approved') {
+        p.approvedAt = new Date().toISOString();
+        p.approvedBy = 'Dr. Robert Henderson, M.D.';
+      }
+      savePatients();
+      renderSidebar();
+      renderPatientDetails();
+
+      const actionText = status === 'approved' ? 'authorized and granted login access' : 'suspended';
+      showToast(`✓ Patient ${p.name} ${actionText}. Real-time companion sync updated.`);
+
+      if (supabaseClient) {
+        supabaseClient.from('patient_profiles').upsert({
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          approval_status: status,
+          approved_by: 'Dr. Robert Henderson, M.D.',
+          updated_at: new Date().toISOString()
+        }).then(res => {
+          console.log('✓ Patient status synced to Supabase:', res);
+        }).catch(e => {
+          console.warn('Supabase sync notice:', e);
+        });
+      }
+    }
+
+    function approveAllPending() {
+      patients.forEach(p => {
+        if (p.approvalStatus === 'pending') {
+          p.approvalStatus = 'approved';
+          p.approvedAt = new Date().toISOString();
+          p.approvedBy = 'Dr. Robert Henderson, M.D.';
+        }
+      });
+      savePatients();
+      renderSidebar();
+      renderPatientDetails();
+      showToast('✓ All pending patient accounts authorized.');
+    }
+
     function renderPatientDetails() {
       const p = patients[currentPatientIndex];
       if (!p) return;
 
       document.getElementById('profName').innerText = p.name;
       document.getElementById('profMeta').innerHTML = `DOB: ${p.dob} (Age ${p.age}) • Gender: ${p.gender} • Blood Type: <strong>${p.bloodType}</strong>`;
-      document.getElementById('profBio').innerText = `Height: ${p.height} • Weight: ${p.weight}`;
+      document.getElementById('profBio').innerText = `Height: ${p.height} • Weight: ${p.weight} • Email: ${p.email || 'N/A'}`;
+
+      // Authorization Widget
+      const authBox = document.getElementById('profApprovalCard');
+      const isApproved = p.approvalStatus === 'approved';
+      authBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong style="font-size:12px; display:flex; align-items:center; gap:6px;">
+            ${isApproved ? '🟢 App Access: Authorized' : '🟠 App Access: Pending Review'}
+          </strong>
+          <span class="badge ${isApproved ? 'badge-approved' : 'badge-pending'}">${p.approvalStatus ? p.approvalStatus.toUpperCase() : 'APPROVED'}</span>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">
+          ${isApproved ? `Authorized by ${p.approvedBy || 'Dr. Robert Henderson'} • Patient companion sync active` : 'Account registered. Medication dosing, schedule & vitals remain locked on phone until verified.'}
+        </div>
+        ${isApproved ?
+          `<button class="btn btn-danger btn-sm" style="width:100%; justify-content:center;" onclick="updatePatientApproval('${p.id}', 'pending')">Revoke / Suspend App Access</button>` :
+          `<button class="btn btn-primary btn-sm" style="width:100%; justify-content:center;" onclick="updatePatientApproval('${p.id}', 'approved')">✓ Authorize & Approve Patient Login</button>`
+        }
+      `;
 
       // Conditions
       const condContainer = document.getElementById('profConditions');
@@ -655,6 +961,101 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Modal: Enroll New Patient
+    function openEnrollPatientModal() {
+      document.getElementById('enrollName').value = '';
+      document.getElementById('enrollEmail').value = '';
+      document.getElementById('enrollPhone').value = '';
+      document.getElementById('enrollCaregiverName').value = '';
+      document.getElementById('enrollCaregiverPhone').value = '';
+      document.getElementById('enrollPatientModal').style.display = 'flex';
+    }
+
+    function closeEnrollPatientModal() {
+      document.getElementById('enrollPatientModal').style.display = 'none';
+    }
+
+    function saveNewPatient() {
+      const name = document.getElementById('enrollName').value.trim();
+      const email = document.getElementById('enrollEmail').value.trim();
+      const phone = document.getElementById('enrollPhone').value.trim() || '+1 (555) 000-0000';
+      const dob = document.getElementById('enrollDOB').value.trim() || '1982-04-18';
+      const gender = document.getElementById('enrollGender').value;
+      const bloodType = document.getElementById('enrollBloodType').value;
+      const height = document.getElementById('enrollHeight').value.trim() || '170 cm';
+      const weight = document.getElementById('enrollWeight').value.trim() || '70 kg';
+      const conditions = document.getElementById('enrollConditions').value.split(',').map(c => c.trim()).filter(Boolean);
+      const allergies = document.getElementById('enrollAllergies').value.split(',').map(a => a.trim()).filter(Boolean);
+      const caregiverName = document.getElementById('enrollCaregiverName').value.trim() || 'Primary Caregiver';
+      const caregiverPhone = document.getElementById('enrollCaregiverPhone').value.trim() || '+1 (555) 000-0001';
+      const riskLevel = document.getElementById('enrollRisk').value;
+      const preApprove = document.getElementById('enrollPreApprove').checked;
+
+      if (!name || !email) {
+        alert('Please enter patient full legal name and account email address.');
+        return;
+      }
+
+      const birthYear = parseInt(dob.split('-')[0], 10) || 1982;
+      const age = Math.max(1, new Date().getFullYear() - birthYear);
+
+      const newPat = {
+        id: `pat-${Date.now()}`,
+        name,
+        email,
+        phone,
+        dob,
+        age,
+        gender,
+        bloodType,
+        height,
+        weight,
+        bmi: "BMI 24.2 (Normal)",
+        conditions: conditions.length > 0 ? conditions : ["Essential Hypertension"],
+        allergies: allergies.length > 0 ? allergies : ["No Known Drug Allergies (NKDA)"],
+        riskLevel,
+        approvalStatus: preApprove ? 'approved' : 'pending',
+        approvedAt: preApprove ? new Date().toISOString() : undefined,
+        approvedBy: preApprove ? 'Dr. Robert Henderson, M.D.' : undefined,
+        registeredAt: new Date().toISOString(),
+        adherence: "100%",
+        streak: "New Patient (Active)",
+        bp: "120 / 80 mmHg",
+        bpCat: "AHA Category: Normal",
+        glucose: "98 mg/dL",
+        pulse: "72 BPM",
+        caregiverName,
+        caregiverPhone,
+        medications: []
+      };
+
+      patients.unshift(newPat);
+      currentPatientIndex = 0;
+      savePatients();
+      closeEnrollPatientModal();
+      renderSidebar();
+      renderPatientDetails();
+      showToast(`✓ Patient ${name} enrolled successfully with ${newPat.approvalStatus === 'approved' ? 'Active Login Access' : 'Pending Status'}.`);
+
+      if (supabaseClient) {
+        supabaseClient.from('patient_profiles').insert({
+          id: newPat.id,
+          name: newPat.name,
+          email: newPat.email,
+          phone: newPat.phone,
+          conditions: newPat.conditions,
+          allergies: newPat.allergies,
+          approval_status: newPat.approvalStatus,
+          approved_by: newPat.approvedBy,
+          created_at: new Date().toISOString()
+        }).then(res => {
+          console.log('✓ Cloud Synced Patient Profile to Supabase:', res);
+        }).catch(err => {
+          console.warn('Supabase sync notice:', err);
+        });
+      }
     }
 
     // Modal: Add Prescription
@@ -748,72 +1149,60 @@
       const newInstr = document.getElementById('adjustInstructionsInput').value.trim();
 
       if (!newDose) {
-        alert('Dosage cannot be empty.');
+        alert('Please enter the new dosage strength.');
         return;
       }
 
       const p = patients[currentPatientIndex];
       const med = p.medications.find(m => m.id === currentAdjustMedId);
-      if (med) {
-        med.dosage = newDose;
-        if (newInstr) med.instructions = newInstr;
-        savePatients();
-        closeAdjustDosageModal();
-        renderPatientDetails();
-        showToast(`Updated ${med.name} dosage to ${newDose} for ${p.name}. Schedule updated.`);
-      }
+      if (!med) return;
+
+      med.dosage = newDose;
+      if (newInstr) med.instructions = newInstr;
+
+      savePatients();
+      closeAdjustDosageModal();
+      renderPatientDetails();
+      showToast(`Adjusted dosage of ${med.name} to ${newDose} for ${p.name}. Dosing times & schedule synced.`);
     }
 
-    // Discontinue Medication
     function discontinueMedication(medId) {
       const p = patients[currentPatientIndex];
       const med = p.medications.find(m => m.id === medId);
       if (!med) return;
 
-      if (confirm(`Are you sure you want to discontinue ${med.name} (${med.dosage}) for ${p.name}?`)) {
-        p.medications = p.medications.filter(m => m.id !== medId);
-        savePatients();
-        renderPatientDetails();
-        showToast(`${med.name} has been discontinued from ${p.name}'s regimen.`);
+      if (!confirm(`Are you sure you want to discontinue ${med.name} (${med.dosage}) for ${p.name}?`)) {
+        return;
       }
+
+      p.medications = p.medications.filter(m => m.id !== medId);
+      savePatients();
+      renderPatientDetails();
+      showToast(`Discontinued ${med.name}. Medication removed from patient regimen.`);
     }
 
-    function setPresetDirective(text) {
-      document.getElementById('directiveText').value = text;
-      showToast('Clinical preset loaded into directive pad.');
+    function setPresetDirective(preset) {
+      document.getElementById('directiveText').value = preset;
     }
 
     function sendDirective() {
       const text = document.getElementById('directiveText').value.trim();
+      const p = patients[currentPatientIndex];
       if (!text) {
-        alert('Please enter a clinical directive note.');
+        alert('Please enter a clinical directive instruction.');
         return;
       }
-      const p = patients[currentPatientIndex];
-      showToast(`Directive dispatched to ${p.name}'s mobile device:\n"${text}"`);
-      document.getElementById('directiveText').value = '';
 
-      if (supabaseClient) {
-        supabaseClient.from('caregiver_alerts').insert({
-          event_type: 'vitals_alert',
-          title: `Dr. Henderson Order for ${p.name}`,
-          description: text,
-          severity: 'warning'
-        }).then(res => {
-          console.log('✓ Directive pushed to Supabase:', res);
-        }).catch(err => {
-          console.warn('Supabase notice:', err);
-        });
-      }
+      document.getElementById('directiveText').value = '';
+      showToast(`📡 Directive dispatched to ${p.name}'s mobile device: "${text.substring(0, 40)}..."`);
     }
 
     function exportAuditDossier() {
       const p = patients[currentPatientIndex];
-      showToast(`Generating full PDF audit dossier for ${p.name}...`);
       window.print();
     }
 
-    // Initialize View
+    // Initial Render
     renderSidebar();
     renderPatientDetails();
   </script>

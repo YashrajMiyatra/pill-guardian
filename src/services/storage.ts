@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Medication, DoseItem, VitalLog, UserProfile, CaregiverContact, DoseStatus } from '../types';
-import { SEED_MEDICATIONS, SEED_VITALS, SEED_USER_PROFILE, SEED_CAREGIVER } from '../data/seedData';
+import { Medication, DoseItem, VitalLog, UserProfile, CaregiverContact, DoseStatus, PatientAccount, PatientApprovalStatus } from '../types';
+import { SEED_MEDICATIONS, SEED_VITALS, SEED_USER_PROFILE, SEED_CAREGIVER, SEED_PATIENTS } from '../data/seedData';
 
 const KEYS = {
   MEDICATIONS: '@pill_guardian_medications',
@@ -8,7 +8,8 @@ const KEYS = {
   VITALS: '@pill_guardian_vitals',
   PROFILE: '@pill_guardian_profile',
   CAREGIVER: '@pill_guardian_caregiver',
-  INITIALIZED: '@pill_guardian_initialized_v1',
+  PATIENTS: '@pill_guardian_patients',
+  INITIALIZED: '@pill_guardian_initialized_v2',
 };
 
 // Helper: Determine time category from "HH:MM"
@@ -30,6 +31,7 @@ export const StorageService = {
         await AsyncStorage.setItem(KEYS.VITALS, JSON.stringify(SEED_VITALS));
         await AsyncStorage.setItem(KEYS.PROFILE, JSON.stringify(SEED_USER_PROFILE));
         await AsyncStorage.setItem(KEYS.CAREGIVER, JSON.stringify(SEED_CAREGIVER));
+        await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(SEED_PATIENTS));
         await AsyncStorage.setItem(KEYS.INITIALIZED, 'true');
       }
     } catch (e) {
@@ -289,6 +291,134 @@ export const StorageService = {
       await AsyncStorage.setItem(KEYS.CAREGIVER, JSON.stringify(caregiver));
     } catch (e) {
       console.error('Error saving caregiver:', e);
+    }
+  },
+
+  // Patient Cohort & Approval System
+  async getPatients(): Promise<PatientAccount[]> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.PATIENTS);
+      if (data) {
+        return JSON.parse(data);
+      }
+      // If not stored yet, initialize with SEED_PATIENTS
+      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(SEED_PATIENTS));
+      return SEED_PATIENTS;
+    } catch (e) {
+      console.error('Error fetching patients:', e);
+      return SEED_PATIENTS;
+    }
+  },
+
+  async savePatient(patient: PatientAccount): Promise<PatientAccount[]> {
+    try {
+      const current = await this.getPatients();
+      const existingIdx = current.findIndex(p => p.id === patient.id || (p.email && p.email.toLowerCase() === patient.email.toLowerCase()));
+      let updated: PatientAccount[];
+      if (existingIdx >= 0) {
+        updated = [...current];
+        updated[existingIdx] = { ...updated[existingIdx], ...patient };
+      } else {
+        updated = [patient, ...current];
+      }
+      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error('Error saving patient:', e);
+      throw e;
+    }
+  },
+
+  async updatePatientApproval(
+    patientId: string,
+    status: PatientApprovalStatus,
+    approvedBy: string = 'Dr. Robert Henderson, M.D.'
+  ): Promise<PatientAccount[]> {
+    try {
+      const current = await this.getPatients();
+      const updated = current.map(p => {
+        if (p.id === patientId || (p.email && p.email.toLowerCase() === patientId.toLowerCase())) {
+          return {
+            ...p,
+            approvalStatus: status,
+            approvedAt: status === 'approved' ? new Date().toISOString() : undefined,
+            approvedBy: status === 'approved' ? approvedBy : undefined,
+          };
+        }
+        return p;
+      });
+      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error('Error updating patient approval status:', e);
+      throw e;
+    }
+  },
+
+  async checkPatientApproval(emailOrId: string): Promise<{
+    approved: boolean;
+    status: PatientApprovalStatus;
+    patient?: PatientAccount;
+  }> {
+    try {
+      const current = await this.getPatients();
+      const match = current.find(
+        p => p.id === emailOrId || (p.email && p.email.toLowerCase() === emailOrId.toLowerCase())
+      );
+      if (!match) {
+        // Unknown account - register as pending by default
+        return { approved: false, status: 'pending' };
+      }
+      return {
+        approved: match.approvalStatus === 'approved',
+        status: match.approvalStatus,
+        patient: match,
+      };
+    } catch (e) {
+      console.error('Error checking patient approval:', e);
+      return { approved: false, status: 'pending' };
+    }
+  },
+
+  async registerPendingPatient(
+    data: Partial<PatientAccount> & { email: string; name: string }
+  ): Promise<PatientAccount> {
+    try {
+      const current = await this.getPatients();
+      const existing = current.find(p => p.email.toLowerCase() === data.email.toLowerCase());
+      if (existing) {
+        return existing;
+      }
+      const newPatient: PatientAccount = {
+        id: `pat-${Date.now()}`,
+        name: data.name,
+        email: data.email,
+        age: data.age || 45,
+        dob: data.dob || '1981-05-15',
+        gender: data.gender || 'Unspecified',
+        bloodType: data.bloodType || 'O+',
+        weight: data.weight || '70 kg',
+        height: data.height || '170 cm',
+        bmi: data.bmi || '24.2 (Normal)',
+        conditions: data.conditions || ['Hypertension'],
+        allergies: data.allergies || ['NKDA'],
+        riskLevel: data.riskLevel || 'medium',
+        adherenceRate: 100,
+        latestBP: '120/80',
+        latestGlucose: '95 mg/dL',
+        phone: data.phone || '+1 (555) 000-0000',
+        caregiverName: data.caregiverName || 'Primary Caregiver',
+        caregiverPhone: data.caregiverPhone || '+1 (555) 000-0001',
+        approvalStatus: 'pending',
+        registeredAt: new Date().toISOString(),
+        notes: data.notes || 'Registered through PillGuardian patient portal. Awaiting clinician authorization.',
+      };
+      const updated = [newPatient, ...current];
+      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(updated));
+      return newPatient;
+    } catch (e) {
+      console.error('Error registering pending patient:', e);
+      throw e;
     }
   },
 };

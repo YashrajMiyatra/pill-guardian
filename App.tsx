@@ -20,6 +20,7 @@ import { CabinetScreen } from './src/screens/CabinetScreen';
 import { VitalsScreen } from './src/screens/VitalsScreen';
 import { CaregiverScreen } from './src/screens/CaregiverScreen';
 import { DoctorDashboardScreen } from './src/screens/DoctorDashboardScreen';
+import { PendingApprovalScreen } from './src/screens/PendingApprovalScreen';
 import Constants from 'expo-constants';
 import { Colors } from './src/theme/colors';
 
@@ -72,6 +73,16 @@ function MainApp() {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
         <DoctorDashboardScreen />
+      </SafeAreaView>
+    );
+  }
+
+  // If patient account is pending physician authorization
+  if (user.approvalStatus === 'pending') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <PendingApprovalScreen />
       </SafeAreaView>
     );
   }

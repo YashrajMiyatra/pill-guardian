@@ -80,3 +80,32 @@ export interface UserProfile {
 }
 
 export type ActiveTab = 'today' | 'cabinet' | 'vitals' | 'caregiver';
+
+export type PatientApprovalStatus = 'approved' | 'pending' | 'rejected';
+
+export interface PatientAccount {
+  id: string;
+  name: string;
+  email: string;
+  age: number;
+  dob: string;
+  gender: string;
+  bloodType: string;
+  weight: string;
+  height: string;
+  bmi: string;
+  conditions: string[];
+  allergies: string[];
+  riskLevel: 'high' | 'medium' | 'stable';
+  adherenceRate: number;
+  latestBP: string;
+  latestGlucose: string;
+  phone: string;
+  caregiverName: string;
+  caregiverPhone: string;
+  approvalStatus: PatientApprovalStatus;
+  approvedAt?: string;
+  approvedBy?: string;
+  registeredAt: string;
+  notes?: string;
+}

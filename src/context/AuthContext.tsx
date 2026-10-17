@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { BiometricService } from '../services/biometrics';
+import { StorageService } from '../services/storage';
+import { PatientApprovalStatus } from '../types';
 
 const DEMO_AUTH_KEY = '@pill_guardian_demo_auth';
 const USER_ROLE_KEY = '@pill_guardian_user_role';
@@ -15,19 +17,21 @@ export interface AuthUser {
   fullName: string;
   role: UserRole;
   isDemo: boolean;
+  approvalStatus?: PatientApprovalStatus;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isDemoMode: boolean;
-  signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, pass: string, name: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithGoogle: (role?: UserRole) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string; pendingApproval?: boolean }>;
+  signUp: (email: string, pass: string, name: string) => Promise<{ success: boolean; error?: string; pendingApproval?: boolean }>;
+  signInWithGoogle: (role?: UserRole) => Promise<{ success: boolean; error?: string; pendingApproval?: boolean }>;
   signOut: () => Promise<void>;
   loginAsDemoUser: (role?: UserRole) => Promise<void>;
   authenticateWithBiometrics: () => Promise<boolean>;
   switchRole: (role: UserRole) => Promise<void>;
+  refreshUserApproval: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -51,6 +55,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const parsedUser = JSON.parse(savedRealUser);
           if (parsedUser && parsedUser.id) {
+            // Live check if doctor has approved or updated access status
+            if (parsedUser.role === 'patient') {
+              const approval = await StorageService.checkPatientApproval(parsedUser.email);
+              parsedUser.approvalStatus = approval.status;
+            } else {
+              parsedUser.approvalStatus = 'approved';
+            }
             setUser(parsedUser);
             setIsDemoMode(false);
             setIsLoading(false);
@@ -63,12 +74,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isSupabaseConfigured()) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const role = (session.user.user_metadata?.role as UserRole) || savedRole;
+          let approvalStatus: PatientApprovalStatus = 'approved';
+          if (role === 'patient') {
+            const approval = await StorageService.checkPatientApproval(session.user.email || '');
+            approvalStatus = approval.status;
+          }
           const authUser: AuthUser = {
             id: session.user.id,
             email: session.user.email || '',
             fullName: session.user.user_metadata?.full_name || 'Arthur Bennett',
-            role: (session.user.user_metadata?.role as UserRole) || savedRole,
+            role,
             isDemo: false,
+            approvalStatus,
           };
           setUser(authUser);
           setIsDemoMode(false);
@@ -83,10 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedDemo === 'true') {
         setUser({
           id: 'demo-user-1',
-          email: savedRole === 'doctor' ? 'dr.henderson@hospital.org' : 'Arthur Bennett',
+          email: savedRole === 'doctor' ? 'dr.henderson@hospital.org' : 'arthur.bennett@example.com',
           fullName: savedRole === 'doctor' ? 'Dr. Robert Henderson, M.D.' : 'Arthur Bennett',
           role: savedRole,
           isDemo: true,
+          approvalStatus: 'approved',
         });
         setIsDemoMode(true);
         setIsLoading(false);
@@ -112,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fullName: role === 'doctor' ? 'Dr. Robert Henderson, M.D.' : 'Arthur Bennett',
       role,
       isDemo: true,
+      approvalStatus: 'approved',
     });
     setIsDemoMode(true);
   };
@@ -122,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser({
         ...user,
         role: newRole,
+        approvalStatus: newRole === 'doctor' ? 'approved' : user.approvalStatus || 'approved',
         fullName:
           user.isDemo && newRole === 'doctor'
             ? 'Dr. Robert Henderson, M.D.'
@@ -138,10 +159,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+  const signIn = async (
+    email: string,
+    pass: string
+  ): Promise<{ success: boolean; error?: string; pendingApproval?: boolean }> => {
     if (!isSupabaseConfigured()) {
-      await loginAsDemoUser();
-      return { success: true };
+      const approval = await StorageService.checkPatientApproval(email);
+      const isApproved = approval.status === 'approved';
+      const signedUser: AuthUser = {
+        id: `user-${Date.now()}`,
+        email,
+        fullName: approval.patient?.name || email.split('@')[0],
+        role: 'patient',
+        isDemo: false,
+        approvalStatus: approval.status,
+      };
+      setUser(signedUser);
+      setIsDemoMode(false);
+      await AsyncStorage.removeItem(DEMO_AUTH_KEY);
+      await AsyncStorage.setItem(REAL_USER_KEY, JSON.stringify(signedUser));
+      return { success: true, pendingApproval: !isApproved };
     }
 
     try {
@@ -156,17 +193,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         const savedRole = ((await AsyncStorage.getItem(USER_ROLE_KEY)) as UserRole) || 'patient';
+        let approvalStatus: PatientApprovalStatus = 'approved';
+        if (savedRole === 'patient') {
+          const approval = await StorageService.checkPatientApproval(email);
+          approvalStatus = approval.status;
+        }
         const signedUser: AuthUser = {
           id: data.user.id,
           email: data.user.email || '',
           fullName: data.user.user_metadata?.full_name || 'Patient',
           role: (data.user.user_metadata?.role as UserRole) || savedRole,
           isDemo: false,
+          approvalStatus,
         };
         setUser(signedUser);
         setIsDemoMode(false);
         await AsyncStorage.removeItem(DEMO_AUTH_KEY);
         await AsyncStorage.setItem(REAL_USER_KEY, JSON.stringify(signedUser));
+        return { success: true, pendingApproval: approvalStatus === 'pending' };
       }
       return { success: true };
     } catch (e: any) {
@@ -174,7 +218,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithGoogle = async (role: UserRole = 'patient'): Promise<{ success: boolean; error?: string }> => {
+  const signInWithGoogle = async (
+    role: UserRole = 'patient'
+  ): Promise<{ success: boolean; error?: string; pendingApproval?: boolean }> => {
     try {
       if (isSupabaseConfigured()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -185,25 +231,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (error) {
-          // If OAuth redirect fails in development build, provide authenticated Google session
           console.warn('Supabase OAuth notice:', error.message);
         }
       }
 
-      // Complete Google login and persist session
+      // Check approval status for patient
+      const googleEmail = 'yashraj.miyatra@gmail.com';
+      let approvalStatus: PatientApprovalStatus = 'approved';
+      if (role === 'patient') {
+        const approval = await StorageService.checkPatientApproval(googleEmail);
+        approvalStatus = approval.status;
+        if (!approval.patient) {
+          // Register as new patient in queue
+          await StorageService.registerPendingPatient({
+            email: googleEmail,
+            name: 'Yashraj Miyatra (Google)',
+          });
+        }
+      }
+
       await AsyncStorage.removeItem(DEMO_AUTH_KEY);
       await AsyncStorage.setItem(USER_ROLE_KEY, role);
       const googleUser: AuthUser = {
         id: `google-user-${Date.now()}`,
-        email: 'yashraj.miyatra@gmail.com',
+        email: googleEmail,
         fullName: role === 'doctor' ? 'Dr. Yashraj Miyatra, M.D.' : 'Yashraj Miyatra (Google)',
         role,
         isDemo: false,
+        approvalStatus,
       };
       setUser(googleUser);
       setIsDemoMode(false);
       await AsyncStorage.setItem(REAL_USER_KEY, JSON.stringify(googleUser));
-      return { success: true };
+      return { success: true, pendingApproval: role === 'patient' && approvalStatus === 'pending' };
     } catch (e: any) {
       return { success: false, error: e.message || 'Google Sign-In failed' };
     }
@@ -213,41 +273,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email: string,
     pass: string,
     name: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    if (!isSupabaseConfigured()) {
-      await loginAsDemoUser();
-      return { success: true };
-    }
-
+  ): Promise<{ success: boolean; error?: string; pendingApproval?: boolean }> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Register new patient account with pending status in clinical records
+      await StorageService.registerPendingPatient({
         email,
-        password: pass,
-        options: {
-          data: { full_name: name, role: 'patient' },
-        },
+        name,
       });
 
-      if (error) {
-        return { success: false, error: error.message };
-      }
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password: pass,
+          options: {
+            data: { full_name: name, role: 'patient', approval_status: 'pending' },
+          },
+        });
 
-      if (data.user) {
+        if (error) {
+          return { success: false, error: error.message };
+        }
+
+        if (data.user) {
+          const newUser: AuthUser = {
+            id: data.user.id,
+            email: data.user.email || email,
+            fullName: name,
+            role: 'patient',
+            isDemo: false,
+            approvalStatus: 'pending',
+          };
+          setUser(newUser);
+          setIsDemoMode(false);
+          await AsyncStorage.removeItem(DEMO_AUTH_KEY);
+          await AsyncStorage.setItem(REAL_USER_KEY, JSON.stringify(newUser));
+        }
+      } else {
         const newUser: AuthUser = {
-          id: data.user.id,
-          email: data.user.email || '',
+          id: `patient-${Date.now()}`,
+          email,
           fullName: name,
           role: 'patient',
           isDemo: false,
+          approvalStatus: 'pending',
         };
         setUser(newUser);
         setIsDemoMode(false);
         await AsyncStorage.removeItem(DEMO_AUTH_KEY);
         await AsyncStorage.setItem(REAL_USER_KEY, JSON.stringify(newUser));
       }
-      return { success: true };
+      return { success: true, pendingApproval: true };
     } catch (e: any) {
       return { success: false, error: e.message || 'Registration failed' };
+    }
+  };
+
+  const refreshUserApproval = async (): Promise<boolean> => {
+    if (!user) return false;
+    if (user.role === 'doctor') return true;
+    try {
+      const check = await StorageService.checkPatientApproval(user.email);
+      const updatedUser: AuthUser = {
+        ...user,
+        approvalStatus: check.status,
+      };
+      setUser(updatedUser);
+      await AsyncStorage.setItem(REAL_USER_KEY, JSON.stringify(updatedUser));
+      return check.status === 'approved';
+    } catch (e) {
+      console.warn('Error refreshing approval status:', e);
+      return false;
     }
   };
 
@@ -282,6 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginAsDemoUser,
         authenticateWithBiometrics,
         switchRole,
+        refreshUserApproval,
       }}
     >
       {children}

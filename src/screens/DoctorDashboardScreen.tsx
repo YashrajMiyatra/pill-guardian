@@ -38,98 +38,23 @@ import {
   Sparkles,
   ClipboardList,
 } from 'lucide-react-native';
-import { Medication, VitalLog, UserProfile, CaregiverContact, DoseItem } from '../types';
+import {
+  Medication,
+  VitalLog,
+  UserProfile,
+  CaregiverContact,
+  DoseItem,
+  PatientAccount,
+  PatientApprovalStatus,
+} from '../types';
 import { StorageService } from '../services/storage';
 import { ReportGeneratorService } from '../services/reportGenerator';
 import { InteractionCheckerService, DrugInteractionAlert } from '../services/interactionChecker';
+import { SEED_PATIENTS } from '../data/seedData';
 import { useAuth } from '../context/AuthContext';
 import { Colors } from '../theme/colors';
 
 type DoctorTab = 'patients' | 'rx' | 'vitals' | 'orders';
-
-interface PatientRecord {
-  id: string;
-  name: string;
-  age: number;
-  dob: string;
-  gender: string;
-  bloodType: string;
-  weight: string;
-  height: string;
-  bmi: string;
-  conditions: string[];
-  allergies: string[];
-  riskLevel: 'high' | 'medium' | 'stable';
-  adherenceRate: number;
-  latestBP: string;
-  latestGlucose: string;
-  phone: string;
-  caregiverName: string;
-  caregiverPhone: string;
-}
-
-const SAMPLE_PATIENTS: PatientRecord[] = [
-  {
-    id: 'pat-1',
-    name: 'Arthur Bennett',
-    age: 68,
-    dob: '1958-03-14',
-    gender: 'Male',
-    bloodType: 'O+',
-    weight: '84 kg (185 lbs)',
-    height: '178 cm (5 ft 10 in)',
-    bmi: '26.5 (Overweight I)',
-    conditions: ['Type 2 Diabetes', 'Essential Hypertension', 'Mild Persistent Asthma'],
-    allergies: ['Penicillin (Anaphylaxis)', 'Sulfa Drugs (Rash)'],
-    riskLevel: 'medium',
-    adherenceRate: 85,
-    latestBP: '122/78',
-    latestGlucose: '104 mg/dL',
-    phone: '+1 (555) 721-0044',
-    caregiverName: 'Sarah Bennett (Daughter)',
-    caregiverPhone: '+1 (555) 902-1144',
-  },
-  {
-    id: 'pat-2',
-    name: 'Eleanor Vance',
-    age: 72,
-    dob: '1954-08-22',
-    gender: 'Female',
-    bloodType: 'A-',
-    weight: '62 kg (136 lbs)',
-    height: '162 cm (5 ft 4 in)',
-    bmi: '23.6 (Normal)',
-    conditions: ['Congestive Heart Failure', 'Atrial Fibrillation', 'CKD Stage 2'],
-    allergies: ['Aspirin (GI Bleeding)', 'ACE Inhibitors (Severe Cough)'],
-    riskLevel: 'high',
-    adherenceRate: 64,
-    latestBP: '148/92',
-    latestGlucose: '138 mg/dL',
-    phone: '+1 (555) 342-9912',
-    caregiverName: 'David Vance (Son)',
-    caregiverPhone: '+1 (555) 883-4412',
-  },
-  {
-    id: 'pat-3',
-    name: 'Marcus Davis',
-    age: 59,
-    dob: '1967-11-05',
-    gender: 'Male',
-    bloodType: 'B+',
-    weight: '91 kg (200 lbs)',
-    height: '183 cm (6 ft 0 in)',
-    bmi: '27.2 (Overweight I)',
-    conditions: ['Hypertension', 'Hyperlipidemia', 'Pre-diabetes'],
-    allergies: ['No Known Drug Allergies (NKDA)'],
-    riskLevel: 'stable',
-    adherenceRate: 96,
-    latestBP: '118/74',
-    latestGlucose: '98 mg/dL',
-    phone: '+1 (555) 481-2201',
-    caregiverName: 'Elena Davis (Spouse)',
-    caregiverPhone: '+1 (555) 774-3321',
-  },
-];
 
 const CLINICAL_PRESETS = [
   'Titrate Lisinopril to 20mg PO daily for systolic control. Re-check BP in 7 days.',
@@ -141,6 +66,7 @@ const CLINICAL_PRESETS = [
 export const DoctorDashboardScreen: React.FC = () => {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<DoctorTab>('patients');
+  const [patients, setPatients] = useState<PatientAccount[]>(SEED_PATIENTS);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('pat-1');
   const [patientSearch, setPatientSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState<'all' | 'high' | 'medium' | 'stable'>('all');
@@ -152,6 +78,23 @@ export const DoctorDashboardScreen: React.FC = () => {
   const [caregiver, setCaregiver] = useState<CaregiverContact | null>(null);
   const [doses, setDoses] = useState<DoseItem[]>([]);
   const [interactionAlerts, setInteractionAlerts] = useState<DrugInteractionAlert[]>([]);
+
+  // Enrollment Modal & Form State
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [enrollName, setEnrollName] = useState('');
+  const [enrollEmail, setEnrollEmail] = useState('');
+  const [enrollPhone, setEnrollPhone] = useState('');
+  const [enrollDOB, setEnrollDOB] = useState('1980-05-12');
+  const [enrollGender, setEnrollGender] = useState('Male');
+  const [enrollBloodType, setEnrollBloodType] = useState('O+');
+  const [enrollHeight, setEnrollHeight] = useState('175 cm (5 ft 9 in)');
+  const [enrollWeight, setEnrollWeight] = useState('78 kg (172 lbs)');
+  const [enrollConditions, setEnrollConditions] = useState('Essential Hypertension, Dyslipidemia');
+  const [enrollAllergies, setEnrollAllergies] = useState('Penicillin (Rash)');
+  const [enrollCaregiverName, setEnrollCaregiverName] = useState('');
+  const [enrollCaregiverPhone, setEnrollCaregiverPhone] = useState('');
+  const [enrollRisk, setEnrollRisk] = useState<'stable' | 'medium' | 'high'>('medium');
+  const [enrollPreApprove, setEnrollPreApprove] = useState(true);
 
   // Prescription Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -177,34 +120,115 @@ export const DoctorDashboardScreen: React.FC = () => {
   const loadPatientData = async () => {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
-      const [m, v, p, c, d] = await Promise.all([
+      const [m, v, p, c, d, patList] = await Promise.all([
         StorageService.getMedications(),
         StorageService.getVitals(),
         StorageService.getProfile(),
         StorageService.getCaregiver(),
         StorageService.getDailyDoses(todayStr),
+        StorageService.getPatients(),
       ]);
       setActiveMeds(m);
       setVitals(v);
       setProfile(p);
       setCaregiver(c);
       setDoses(d);
+      setPatients(patList);
       setInteractionAlerts(InteractionCheckerService.checkInteractions(m));
     } catch (e) {
       console.warn('Error loading patient details:', e);
     }
   };
 
-  const selectedPatient =
-    SAMPLE_PATIENTS.find(p => p.id === selectedPatientId) || SAMPLE_PATIENTS[0];
+  const selectedPatient: PatientAccount =
+    patients.find(p => p.id === selectedPatientId) || patients[0] || SEED_PATIENTS[0];
 
-  const filteredPatients = SAMPLE_PATIENTS.filter(p => {
+  const pendingPatients = patients.filter(p => p.approvalStatus === 'pending');
+
+  const filteredPatients = patients.filter(p => {
     const matchesSearch =
       p.name.toLowerCase().includes(patientSearch.toLowerCase()) ||
-      p.conditions.some(c => c.toLowerCase().includes(patientSearch.toLowerCase()));
+      p.conditions.some(c => c.toLowerCase().includes(patientSearch.toLowerCase())) ||
+      (p.email && p.email.toLowerCase().includes(patientSearch.toLowerCase()));
     const matchesRisk = riskFilter === 'all' || p.riskLevel === riskFilter;
     return matchesSearch && matchesRisk;
   });
+
+  // Doctor enrolls a new patient
+  const handleEnrollPatient = async () => {
+    if (!enrollName.trim() || !enrollEmail.trim()) {
+      Alert.alert('Required Information', 'Please provide at least the patient full legal name and email address.');
+      return;
+    }
+
+    const birthYear = parseInt(enrollDOB.split('-')[0], 10) || 1980;
+    const currentYear = new Date().getFullYear();
+    const age = Math.max(1, currentYear - birthYear);
+
+    const newPatient: PatientAccount = {
+      id: `pat-${Date.now()}`,
+      name: enrollName.trim(),
+      email: enrollEmail.trim().toLowerCase(),
+      age,
+      dob: enrollDOB.trim(),
+      gender: enrollGender,
+      bloodType: enrollBloodType,
+      weight: enrollWeight.trim() || '75 kg',
+      height: enrollHeight.trim() || '175 cm',
+      bmi: '24.5 (Normal BMI)',
+      conditions: enrollConditions.split(',').map(c => c.trim()).filter(Boolean),
+      allergies: enrollAllergies.split(',').map(a => a.trim()).filter(Boolean),
+      riskLevel: enrollRisk,
+      adherenceRate: 100,
+      latestBP: '120/80',
+      latestGlucose: '95 mg/dL',
+      phone: enrollPhone.trim() || '+1 (555) 000-0000',
+      caregiverName: enrollCaregiverName.trim() || 'Designated Proxy',
+      caregiverPhone: enrollCaregiverPhone.trim() || '+1 (555) 000-0001',
+      approvalStatus: enrollPreApprove ? 'approved' : 'pending',
+      approvedAt: enrollPreApprove ? new Date().toISOString() : undefined,
+      approvedBy: enrollPreApprove ? (user?.fullName || 'Dr. Robert Henderson, M.D.') : undefined,
+      registeredAt: new Date().toISOString(),
+      notes: 'Direct clinical onboarding via PillGuardian MD Workstation.',
+    };
+
+    try {
+      const updatedList = await StorageService.savePatient(newPatient);
+      setPatients(updatedList);
+      setSelectedPatientId(newPatient.id);
+      setIsEnrollModalOpen(false);
+      setEnrollName('');
+      setEnrollEmail('');
+      setEnrollPhone('');
+      setEnrollCaregiverName('');
+      setEnrollCaregiverPhone('');
+      Alert.alert(
+        'Patient Enrolled Successfully',
+        `${newPatient.name} has been enrolled in RPM cohort with ${newPatient.approvalStatus === 'approved' ? '✓ Immediate Login Access' : '⏳ Pending Status'}.`
+      );
+    } catch {
+      Alert.alert('Error', 'Failed to enroll new patient.');
+    }
+  };
+
+  // Doctor updates patient approval status
+  const handleUpdateApproval = async (patientId: string, status: PatientApprovalStatus) => {
+    try {
+      const updatedList = await StorageService.updatePatientApproval(
+        patientId,
+        status,
+        user?.fullName || 'Dr. Robert Henderson, M.D.'
+      );
+      setPatients(updatedList);
+      const target = updatedList.find(p => p.id === patientId);
+      Alert.alert(
+        status === 'approved' ? 'Login Access Authorized' : 'Access Suspended',
+        `${target?.name || 'Patient'} companion portal login has been ${status === 'approved' ? 'authorized by Dr. Henderson' : 'suspended'}.`
+      );
+    } catch {
+      Alert.alert('Error', 'Could not update patient access authorization.');
+    }
+  };
 
   // Doctor modifies dosage
   const handleOpenAdjustModal = (med: Medication) => {
@@ -382,12 +406,14 @@ export const DoctorDashboardScreen: React.FC = () => {
             {/* KPI Cards */}
             <View style={styles.kpiRow}>
               <View style={styles.kpiCard}>
-                <Text style={styles.kpiNumber}>48</Text>
-                <Text style={styles.kpiLabel}>Enrolled Patients</Text>
+                <Text style={styles.kpiNumber}>{patients.length}</Text>
+                <Text style={styles.kpiLabel}>Enrolled Cohort</Text>
               </View>
-              <View style={[styles.kpiCard, styles.kpiCardWarning]}>
-                <Text style={[styles.kpiNumber, { color: '#B45309' }]}>3</Text>
-                <Text style={styles.kpiLabel}>Critical BP Spikes</Text>
+              <View style={[styles.kpiCard, pendingPatients.length > 0 && styles.kpiCardWarning]}>
+                <Text style={[styles.kpiNumber, pendingPatients.length > 0 && { color: '#B45309' }]}>
+                  {pendingPatients.length}
+                </Text>
+                <Text style={styles.kpiLabel}>Pending Approvals</Text>
               </View>
               <View style={styles.kpiCard}>
                 <Text style={[styles.kpiNumber, { color: '#15803D' }]}>91%</Text>
@@ -395,12 +421,61 @@ export const DoctorDashboardScreen: React.FC = () => {
               </View>
             </View>
 
+            {/* Action Bar: Cohort Header & Add Patient */}
+            <View style={styles.rosterHeaderRow}>
+              <View>
+                <Text style={styles.rosterSectionTitle}>Patient Roster ({filteredPatients.length})</Text>
+                <Text style={styles.rosterSectionSub}>Active remote monitoring & enrolled accounts</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.enrollPatientBtn}
+                onPress={() => setIsEnrollModalOpen(true)}
+                activeOpacity={0.85}
+              >
+                <Plus size={15} color="#FFFFFF" />
+                <Text style={styles.enrollPatientBtnText}>+ Enroll Patient</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Pending Approvals Notice Banner */}
+            {pendingPatients.length > 0 && (
+              <View style={styles.pendingAlertBox}>
+                <View style={styles.pendingAlertTop}>
+                  <Clock size={16} color="#B45309" />
+                  <Text style={styles.pendingAlertTitle}>
+                    {pendingPatients.length} Patient Access Request{pendingPatients.length > 1 ? 's' : ''} Awaiting Review
+                  </Text>
+                </View>
+                <Text style={styles.pendingAlertSub}>
+                  Patient accounts registered online require clinician authorization before active prescriptions and vitals synchronization are unlocked.
+                </Text>
+                {pendingPatients.map(pending => (
+                  <View key={pending.id} style={styles.pendingRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.pendingPatientName}>{pending.name}</Text>
+                      <Text style={styles.pendingPatientMeta}>
+                        {pending.email} • {pending.conditions[0] || 'New Patient'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.quickApproveBtn}
+                      onPress={() => handleUpdateApproval(pending.id, 'approved')}
+                      activeOpacity={0.8}
+                    >
+                      <CheckCircle2 size={13} color="#FFFFFF" />
+                      <Text style={styles.quickApproveBtnText}>Authorize</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* Roster & Search */}
             <View style={styles.searchBar}>
               <Search size={15} color="#94A3B8" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search patient name, condition..."
+                placeholder="Search patient name, condition, email..."
                 placeholderTextColor="#94A3B8"
                 value={patientSearch}
                 onChangeText={setPatientSearch}
@@ -426,6 +501,7 @@ export const DoctorDashboardScreen: React.FC = () => {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.patientScroll}>
               {filteredPatients.map(pat => {
                 const isSelected = pat.id === selectedPatientId;
+                const isPending = pat.approvalStatus === 'pending';
                 const isHigh = pat.riskLevel === 'high';
                 const isMed = pat.riskLevel === 'medium';
                 return (
@@ -437,23 +513,29 @@ export const DoctorDashboardScreen: React.FC = () => {
                   >
                     <View style={styles.patientCardTop}>
                       <Text style={styles.cardPatientName}>{pat.name}</Text>
-                      <View
-                        style={[
-                          styles.riskBadge,
-                          isHigh ? styles.riskBadgeHigh : isMed ? styles.riskBadgeMed : styles.riskBadgeStable,
-                        ]}
-                      >
-                        <Text
+                      {isPending ? (
+                        <View style={styles.badgePendingSmall}>
+                          <Text style={styles.badgePendingTextSmall}>PENDING</Text>
+                        </View>
+                      ) : (
+                        <View
                           style={[
-                            styles.riskBadgeText,
-                            isHigh ? styles.riskBadgeTextHigh : isMed ? styles.riskBadgeTextMed : styles.riskBadgeTextStable,
+                            styles.riskBadge,
+                            isHigh ? styles.riskBadgeHigh : isMed ? styles.riskBadgeMed : styles.riskBadgeStable,
                           ]}
                         >
-                          {pat.riskLevel.toUpperCase()}
-                        </Text>
-                      </View>
+                          <Text
+                            style={[
+                              styles.riskBadgeText,
+                              isHigh ? styles.riskBadgeTextHigh : isMed ? styles.riskBadgeTextMed : styles.riskBadgeTextStable,
+                            ]}
+                          >
+                            {pat.riskLevel.toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                    <Text style={styles.cardPatientMeta}>Age {pat.age} • {pat.conditions[0]}</Text>
+                    <Text style={styles.cardPatientMeta}>Age {pat.age} • {pat.conditions[0] || 'Under Observation'}</Text>
                     <Text style={styles.cardPatientSub}>BP: {pat.latestBP} • {pat.adherenceRate}% Adherence</Text>
                   </TouchableOpacity>
                 );
@@ -477,6 +559,65 @@ export const DoctorDashboardScreen: React.FC = () => {
               <Text style={styles.dossierBio}>
                 Height: {selectedPatient.height} • Weight: {selectedPatient.weight} • BMI: {selectedPatient.bmi}
               </Text>
+
+              {/* Account & Login Access Authorization Banner */}
+              <View style={styles.authStatusCard}>
+                <View style={styles.authStatusHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                    {selectedPatient.approvalStatus === 'approved' ? (
+                      <CheckCircle2 size={16} color="#15803D" />
+                    ) : (
+                      <Clock size={16} color="#D97706" />
+                    )}
+                    <Text style={styles.authStatusTitle}>
+                      {selectedPatient.approvalStatus === 'approved'
+                        ? 'App Access: Authorized'
+                        : 'App Access: Pending Review'}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.authStatusBadge,
+                      selectedPatient.approvalStatus === 'approved' ? styles.badgeApproved : styles.badgePending,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.authStatusBadgeText,
+                        selectedPatient.approvalStatus === 'approved' ? styles.badgeApprovedText : styles.badgePendingText,
+                      ]}
+                    >
+                      {selectedPatient.approvalStatus.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.authStatusMeta}>
+                  {selectedPatient.approvalStatus === 'approved'
+                    ? `Authorized by ${selectedPatient.approvedBy || 'Dr. Robert Henderson, M.D.'} • Direct cloud sync active`
+                    : 'Account registered. Medication orders, dosing schedules, and biometrics remain locked until approved.'}
+                </Text>
+
+                {selectedPatient.approvalStatus === 'pending' ? (
+                  <TouchableOpacity
+                    style={styles.approveAccessBtn}
+                    onPress={() => handleUpdateApproval(selectedPatient.id, 'approved')}
+                    activeOpacity={0.8}
+                  >
+                    <CheckCircle2 size={14} color="#FFFFFF" />
+                    <Text style={styles.approveAccessBtnText}>✓ Authorize & Approve Patient Login</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.revokeAccessBtn}
+                    onPress={() => handleUpdateApproval(selectedPatient.id, 'pending')}
+                    activeOpacity={0.8}
+                  >
+                    <ShieldAlert size={13} color="#DC2626" />
+                    <Text style={styles.revokeAccessBtnText}>Suspend / Revoke Login Access</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
               {/* Diagnoses */}
               <Text style={styles.sectionSubLabel}>DIAGNOSED CONDITIONS:</Text>
@@ -829,6 +970,199 @@ export const DoctorDashboardScreen: React.FC = () => {
               <CheckCircle2 size={15} color="#FFFFFF" />
               <Text style={styles.submitModalBtnText}>Commit Change</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: Enroll New Patient */}
+      <Modal
+        visible={isEnrollModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsEnrollModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalBox, { maxHeight: '90%' }]}>
+            <View style={styles.modalTop}>
+              <View>
+                <Text style={styles.modalTitle}>Enroll New Patient</Text>
+                <Text style={styles.modalSub}>Create medical record & configure app authorization</Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsEnrollModalOpen(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>Patient Full Legal Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Chloe Chen, Robert Vance"
+                placeholderTextColor="#94A3B8"
+                value={enrollName}
+                onChangeText={setEnrollName}
+              />
+
+              <Text style={styles.label}>Account Email Address * (For App Login)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. chloe.chen@example.com"
+                placeholderTextColor="#94A3B8"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={enrollEmail}
+                onChangeText={setEnrollEmail}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Contact Phone</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="+1 (555) 000-0000"
+                    placeholderTextColor="#94A3B8"
+                    value={enrollPhone}
+                    onChangeText={setEnrollPhone}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>DOB (YYYY-MM-DD)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="1982-04-18"
+                    placeholderTextColor="#94A3B8"
+                    value={enrollDOB}
+                    onChangeText={setEnrollDOB}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.label}>Gender</Text>
+              <View style={styles.formRow}>
+                {(['Male', 'Female', 'Other'] as const).map(g => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.formChip, enrollGender === g && styles.formChipActive]}
+                    onPress={() => setEnrollGender(g)}
+                  >
+                    <Text style={[styles.formChipText, enrollGender === g && styles.formChipTextActive]}>
+                      {g}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Blood Type</Text>
+              <View style={styles.formRow}>
+                {(['O+', 'A+', 'B+', 'AB+', 'O-', 'A-'] as const).map(bt => (
+                  <TouchableOpacity
+                    key={bt}
+                    style={[styles.formChip, enrollBloodType === bt && styles.formChipActive]}
+                    onPress={() => setEnrollBloodType(bt)}
+                  >
+                    <Text style={[styles.formChipText, enrollBloodType === bt && styles.formChipTextActive]}>
+                      {bt}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Height</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="175 cm"
+                    placeholderTextColor="#94A3B8"
+                    value={enrollHeight}
+                    onChangeText={setEnrollHeight}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Weight</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="78 kg"
+                    placeholderTextColor="#94A3B8"
+                    value={enrollWeight}
+                    onChangeText={setEnrollWeight}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.label}>Diagnosed Chronic Conditions (Comma-separated)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Type 2 Diabetes, Hypertension, Asthma"
+                placeholderTextColor="#94A3B8"
+                value={enrollConditions}
+                onChangeText={setEnrollConditions}
+              />
+
+              <Text style={styles.label}>Critical Drug Allergies (Comma-separated)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Penicillin (Anaphylaxis), Sulfa drugs"
+                placeholderTextColor="#94A3B8"
+                value={enrollAllergies}
+                onChangeText={setEnrollAllergies}
+              />
+
+              <Text style={styles.label}>Designated Proxy / Caregiver Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Maya Chen (Spouse)"
+                placeholderTextColor="#94A3B8"
+                value={enrollCaregiverName}
+                onChangeText={setEnrollCaregiverName}
+              />
+
+              <Text style={styles.label}>Caregiver Phone</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="+1 (555) 992-1100"
+                placeholderTextColor="#94A3B8"
+                value={enrollCaregiverPhone}
+                onChangeText={setEnrollCaregiverPhone}
+              />
+
+              <Text style={styles.label}>Initial Risk Stratification</Text>
+              <View style={styles.formRow}>
+                {(['stable', 'medium', 'high'] as const).map(r => (
+                  <TouchableOpacity
+                    key={r}
+                    style={[styles.formChip, enrollRisk === r && styles.formChipActive]}
+                    onPress={() => setEnrollRisk(r)}
+                  >
+                    <Text style={[styles.formChipText, enrollRisk === r && styles.formChipTextActive]}>
+                      {r.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Login Authorization Checkbox */}
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setEnrollPreApprove(!enrollPreApprove)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.checkboxBox, enrollPreApprove && styles.checkboxBoxChecked]}>
+                  {enrollPreApprove && <CheckCircle2 size={14} color="#FFFFFF" />}
+                </View>
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={styles.checkboxLabel}>Authorize Login Immediately</Text>
+                  <Text style={styles.checkboxSub}>
+                    Grants patient immediate companion app access upon registration.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.submitModalBtn} onPress={handleEnrollPatient}>
+                <Plus size={16} color="#FFFFFF" />
+                <Text style={styles.submitModalBtnText}>Enroll Patient into RPM Cohort</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1591,5 +1925,217 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  rosterHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  rosterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  rosterSectionSub: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  enrollPatientBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0D9488',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    gap: 4,
+  },
+  enrollPatientBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pendingAlertBox: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  pendingAlertTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  pendingAlertTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  pendingAlertSub: {
+    fontSize: 11,
+    color: '#92400E',
+    marginBottom: 8,
+  },
+  pendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 6,
+  },
+  pendingPatientName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  pendingPatientMeta: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  quickApproveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10B981',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    gap: 4,
+  },
+  quickApproveBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  badgePendingSmall: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgePendingTextSmall: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  authStatusCard: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  authStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  authStatusTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  authStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  authStatusBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  badgeApproved: {
+    backgroundColor: '#DCFCE7',
+  },
+  badgePending: {
+    backgroundColor: '#FEF3C7',
+  },
+  badgeApprovedText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  badgePendingText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  authStatusMeta: {
+    fontSize: 11,
+    color: '#64748B',
+    marginBottom: 10,
+    lineHeight: 16,
+  },
+  approveAccessBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0D9488',
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  approveAccessBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  revokeAccessBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    paddingVertical: 7,
+    borderRadius: 8,
+    gap: 6,
+  },
+  revokeAccessBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderRadius: 8,
+    padding: 10,
+    marginVertical: 10,
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#94A3B8',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxBoxChecked: {
+    backgroundColor: '#0D9488',
+    borderColor: '#0D9488',
+  },
+  checkboxLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  checkboxSub: {
+    fontSize: 10,
+    color: '#64748B',
   },
 });
