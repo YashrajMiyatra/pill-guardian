@@ -350,7 +350,7 @@
 <body>
 
   <!-- Dedicated Google Clinician Sign-In Modal -->
-  <div class="auth-overlay" id="doctorLoginOverlay">
+  <div class="auth-overlay" id="doctorLoginOverlay" style="display:flex;">
     <div class="google-login-modal">
       <!-- Google Brand Top -->
       <div class="google-header">
@@ -1584,10 +1584,11 @@
       window.print();
     }
 
-    // Doctor Authentication State Management
+    // Doctor Authentication State Management (Session-based: new visits always prompt Google Login)
     let currentDoctor = null;
     try {
-      const storedDoctor = localStorage.getItem('pill_guardian_logged_in_doctor');
+      localStorage.removeItem('pill_guardian_logged_in_doctor'); // Clear old persistent test sessions
+      const storedDoctor = sessionStorage.getItem('pill_guardian_logged_in_doctor');
       if (storedDoctor) {
         currentDoctor = JSON.parse(storedDoctor);
       }
@@ -1710,7 +1711,7 @@
     function loginDoctorSession(doctorObj, toastMsg) {
       currentDoctor = doctorObj;
       try {
-        localStorage.setItem('pill_guardian_logged_in_doctor', JSON.stringify(doctorObj));
+        sessionStorage.setItem('pill_guardian_logged_in_doctor', JSON.stringify(doctorObj));
       } catch (err) {
         console.warn('Storage error saving doctor session:', err);
       }
@@ -1721,7 +1722,10 @@
     function handleDoctorSignOut() {
       if (confirm('Sign out of PillGuardian Clinical Workstation?')) {
         currentDoctor = null;
-        localStorage.removeItem('pill_guardian_logged_in_doctor');
+        try {
+          sessionStorage.removeItem('pill_guardian_logged_in_doctor');
+          localStorage.removeItem('pill_guardian_logged_in_doctor');
+        } catch {}
         checkDoctorAuth();
         showToast('🔒 Signed out of clinical workstation.');
       }
