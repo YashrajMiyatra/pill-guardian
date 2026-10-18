@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PillGuardian™ Clinical RPM Portal | Doctor & Physician Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --success: #10b981;
+      --success-light: #dcfce7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar { width: 330px; background: var(--card); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .sidebar-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand-wrap { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #0284c7, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 20px; }
+    .brand-title { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1.2; }
+    .brand-sub { font-size: 10px; color: var(--teal); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .patient-search { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+    .search-input { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 13px; outline: none; }
+    .search-input:focus { border-color: var(--teal); }
+
+    .filter-chips { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: #fafafa; overflow-x: auto; }
+    .filter-chip { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; color: var(--muted); white-space: nowrap; }
+    .filter-chip.active { background: var(--teal); color: white; border-color: var(--teal); }
+    .filter-chip.chip-pending { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+    .filter-chip.chip-pending.active { background: #d97706; color: white; border-color: #d97706; }
+
+    .patient-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .patient-item { padding: 11px 13px; border-radius: 10px; margin-bottom: 7px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s; }
+    .patient-item:hover { background: var(--bg); }
+    .patient-item.active { background: #f0fdfa; border-color: var(--teal); }
+    .patient-name-row { display: flex; justify-content: space-between; align-items: center; }
+    .patient-name { font-weight: 800; font-size: 13px; color: var(--text); }
+    .badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+    .badge-high { background: var(--danger-light); color: #b91c1c; }
+    .badge-medium { background: var(--warning-light); color: #b45309; }
+    .badge-stable { background: var(--success-light); color: #15803d; }
+    .badge-pending { background: var(--warning-light); color: #b45309; border: 1px solid #fde68a; }
+    .badge-approved { background: var(--success-light); color: #15803d; border: 1px solid #bbf7d0; }
+    .patient-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .patient-sub-stats { font-size: 11px; font-weight: 600; color: var(--primary); margin-top: 3px; display: flex; gap: 8px; }
+
+    /* Main Content */
+    .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+    .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 28px; display: flex; justify-content: space-between; align-items: center; }
+    .doc-info { display: flex; align-items: center; gap: 12px; }
+    .doc-avatar { width: 42px; height: 42px; border-radius: 21px; background: var(--teal-light); display: flex; align-items: center; justify-content: center; color: var(--teal); font-weight: 800; font-size: 15px; }
+    .doc-name { font-size: 15px; font-weight: 800; color: var(--text); }
+    .doc-dept { font-size: 11px; color: var(--muted); }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .btn { padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
+    .btn-primary { background: var(--teal); color: white; }
+    .btn-primary:hover { background: #0f766e; }
+    .btn-blue { background: var(--primary); color: white; }
+    .btn-blue:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: white; border: 1px solid var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger-light); color: #b91c1c; border: 1px solid #fecaca; }
+    .btn-sm { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
+
+    .google-sso-badge { display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #1e293b; }
+    .google-g-icon { width: 16px; height: 16px; border-radius: 8px; background: #ea4335; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; }
+
+    .content-area { padding: 20px 28px; display: flex; flex-direction: column; gap: 18px; }
+
+    /* Pending Alerts Banner */
+    .pending-alert-box { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .pending-alert-top { display: flex; align-items: center; justify-content: space-between; }
+    .pending-alert-title { font-size: 13px; font-weight: 800; color: #b45309; display: flex; align-items: center; gap: 8px; }
+    .pending-alert-sub { font-size: 11px; color: #92400e; }
+    .pending-card-row { display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; }
+
+    /* KPI Row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+    .kpi-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 24px; font-weight: 800; color: var(--text); margin-top: 4px; }
+    .kpi-sub { font-size: 11px; color: var(--teal); font-weight: 600; margin-top: 3px; }
+
+    /* Dossier Grid */
+    .dossier-grid { display: grid; grid-template-columns: 2fr 1.1fr; gap: 18px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    .card-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+    /* Interaction Alert */
+    .alert-box { background: var(--danger-light); border: 1.5px solid #fecaca; border-radius: 10px; padding: 12px; }
+    .alert-box-title { font-size: 12px; font-weight: 800; color: #b91c1c; display: flex; align-items: center; gap: 6px; }
+    .alert-box-desc { font-size: 11px; color: #7f1d1d; margin-top: 3px; line-height: 1.4; }
+    .alert-box-rec { font-size: 11px; color: #0f766e; font-weight: 700; margin-top: 4px; }
+
+    /* Medication Table */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .med-badge { background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+    .actions-cell { display: flex; gap: 6px; align-items: center; }
+
+    /* Vitals Box */
+    .vitals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .vital-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+    .vital-stat-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .vital-stat-value { font-size: 18px; font-weight: 800; color: var(--text); margin: 3px 0; }
+    .vital-stat-target { font-size: 10px; color: var(--teal); font-weight: 600; }
+
+    /* Directives Box */
+    .directive-box { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .directive-textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; min-height: 70px; resize: none; outline: none; background: var(--bg); }
+    .directive-textarea:focus { border-color: var(--teal); }
+
+    .tag-allergy { background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 10px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+    .tag-condition { background: #f1f5f9; color: #334155; font-weight: 600; padding: 2px 6px; border-radius: 4px; font-size: 10px; display: inline-block; margin-right: 4px; margin-bottom: 4px; }
+
+    /* Modals */
+    .modal-backdrop { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.55); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: white; border-radius: 14px; width: 520px; max-width: 95%; max-height: 90vh; overflow-y: auto; padding: 22px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); }
+    .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+    .modal-sub { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+    .form-group { margin-bottom: 10px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-label { display: block; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 3px; }
+    .form-control { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; outline: none; }
+    .form-control:focus { border-color: var(--teal); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white; padding: 12px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; z-index: 200; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar: Patient Cohort -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-wrap">
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">PillGuardian™</div>
+          <div class="brand-sub">Clinical RPM Care Portal</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="patient-search">
+      <input type="text" class="search-input" id="searchPatient" placeholder="🔍 Search patient, email, condition..." onkeyup="filterPatients()" />
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-primary btn-sm" style="flex:1; justify-content:center;" onclick="openEnrollPatientModal()">+ Enroll</button>
+        <button class="btn btn-danger btn-sm" style="justify-content:center;" onclick="resetToCleanSlate()" title="Wipe sample dummy data">🗑️ Reset</button>
+        <button class="btn btn-outline btn-sm" style="justify-content:center;" onclick="restoreSampleData()" title="Restore demo cohort">🔄 Demo</button>
+      </div>
+    </div>
+
+    <div class="filter-chips">
+      <div class="filter-chip active" id="chipAll" onclick="setRiskFilter('all', this)">ALL (<span id="countAll">4</span>)</div>
+      <div class="filter-chip" onclick="setRiskFilter('good', this)">🟢 GOOD BEHAVIOR</div>
+      <div class="filter-chip" onclick="setRiskFilter('attention', this)">🔴 ATTENTION</div>
+      <div class="filter-chip chip-pending" id="chipPending" onclick="setRiskFilter('pending', this)">PENDING (<span id="countPending">1</span>)</div>
+    </div>
+
+    <div class="patient-list" id="patientList"></div>
+  </aside>
+
+  <!-- Main View -->
+  <main class="main">
+    <header class="topbar">
+      <div class="doc-info">
+        <div class="doc-avatar">RH</div>
+        <div>
+          <div class="doc-name">Dr. Robert Henderson, M.D.</div>
+          <div class="doc-dept">Attending Cardiologist • Metropolitan General Hospital RPM</div>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="google-sso-badge">
+          <div class="google-g-icon">G</div>
+          <span>Google Clinician SSO Active</span>
+        </div>
+        <button class="btn btn-primary" onclick="openEnrollPatientModal()">+ Enroll Patient</button>
+        <button class="btn btn-outline" onclick="window.print()">🖨️ Print Chart</button>
+        <button class="btn btn-blue" onclick="exportAuditDossier()">📄 Export PDF Dossier</button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Pending Access Requests Notification Banner -->
+      <div id="pendingAlertsContainer"></div>
+
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-title">Enrolled Patients</div>
+          <div class="kpi-value" id="kpiPatients">4</div>
+          <div class="kpi-sub">Remote Monitoring Enrolled</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">Pending Approvals</div>
+          <div class="kpi-value" style="color:#b45309;" id="kpiPendingCount">1</div>
+          <div class="kpi-sub" style="color:#b45309;">Requires Physician Review</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">Current Patient Adherence</div>
+          <div class="kpi-value" style="color:#15803d;" id="kpiAdherence">85%</div>
+          <div class="kpi-sub" id="kpiStreak">14-Day Consecutive Streak</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">Active Regimen Count</div>
+          <div class="kpi-value" style="color:#0284c7;" id="kpiMedCount">4 Meds</div>
+          <div class="kpi-sub" id="kpiMedSub">All Authorized by Dr. Henderson</div>
+        </div>
+      </div>
+
+      <!-- Dossier Grid -->
+      <div class="dossier-grid">
+        <!-- Left: Prescriptions & Vitals -->
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <!-- Clinical Drug Interaction Warning -->
+          <div class="alert-box" id="interactionAlertBox">
+            <div class="alert-box-title">⚠️ Clinical Drug Interaction Detected: Lisinopril ↔ OTC Ibuprofen / NSAIDs</div>
+            <div class="alert-box-desc">Concomitant use of ACE inhibitors and NSAIDs blunts antihypertensive efficacy and increases acute renal impairment risk.</div>
+            <div class="alert-box-rec">Clinical Directive: Advise acetaminophen (Tylenol) as preferred analgesia and monitor serum creatinine.</div>
+          </div>
+
+          <!-- Active Prescriptions with CRUD -->
+          <div class="card">
+            <div class="card-title">
+              <div>
+                <span>Prescription Regimen</span>
+                <span style="font-size:12px; color:var(--muted); font-weight:600; margin-left:6px;" id="activePrescriptionCount">(4 Active)</span>
+              </div>
+              <button class="btn btn-primary" onclick="openAddPrescriptionModal()">+ Prescribe New Medication</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Medication</th>
+                  <th>Dosage</th>
+                  <th>Schedule</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="medTableBody"></tbody>
+            </table>
+          </div>
+
+          <!-- Vitals Trends -->
+          <div class="card">
+            <div class="card-title">Biomarkers & Vitals History</div>
+            <div class="vitals-grid">
+              <div class="vital-stat">
+                <div class="vital-stat-title">Blood Pressure (Morning Resting)</div>
+                <div class="vital-stat-value" id="valBP">122 / 78 mmHg</div>
+                <div class="vital-stat-target" id="valBPCat">AHA Category: Normal Optimal</div>
+              </div>
+              <div class="vital-stat">
+                <div class="vital-stat-title">Fasting Blood Glucose</div>
+                <div class="vital-stat-value" id="valGlucose">104 mg/dL</div>
+                <div class="vital-stat-target">ADA Target Range: 80 - 130 mg/dL</div>
+              </div>
+              <div class="vital-stat">
+                <div class="vital-stat-title">Resting Pulse</div>
+                <div class="vital-stat-value" id="valPulse">72 BPM</div>
+                <div class="vital-stat-target">Normal Sinus Rhythm</div>
+              </div>
+              <div class="vital-stat">
+                <div class="vital-stat-title">Body Weight & BMI</div>
+                <div class="vital-stat-value" id="valWeight">84 kg</div>
+                <div class="vital-stat-target" id="valBMI">BMI: 26.5 (Overweight Class I)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Medicare RPM Reimbursement Compliance -->
+          <div class="card">
+            <div class="card-title">
+              <span>Medicare RPM Reimbursement Compliance (CMS)</span>
+              <span class="badge badge-stable" style="font-size:11px;">✓ QUALIFIED FOR BILLING</span>
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">
+              30-day monitoring period compliance metrics for RPM billing codes.
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div><strong>CPT 99453</strong> — Initial device setup & patient onboarding ($19.20)</div>
+                <strong style="color:var(--success);">✓ Billed</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div><strong>CPT 99454</strong> — 16+ transmission days per month ($48.80)</div>
+                <strong style="color:var(--success);">21 / 30 Days Logged (✓ Qualified)</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div><strong>CPT 99457</strong> — 20 minutes clinical staff RPM review ($51.40)</div>
+                <strong style="color:var(--success);">24 / 20 Mins Logged (✓ Qualified)</strong>
+              </div>
+            </div>
+            <div style="margin-top:12px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; font-weight:700; color:#166534;">Est. Monthly Practice Revenue per Enrolled Patient:</span>
+              <span style="font-size:15px; font-weight:800; color:#15803d;">$119.40 / patient / mo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Patient Profile & Directives -->
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <!-- Patient Summary Card -->
+          <div class="card">
+            <div class="card-title">Patient Medical Profile</div>
+            <div style="margin-bottom:12px;">
+              <div style="font-size:17px; font-weight:800;" id="profName">No Patients Enrolled</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profMeta">
+                Cohort is clear. Tap "+ Enroll" to onboard real patients and specify their medication doses.
+              </div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profBio"></div>
+            </div>
+
+            <!-- Login Access & Authorization Widget -->
+            <div id="profApprovalCard" style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px;">
+              <div style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Clean slate ready for new clinical enrollments.</div>
+            </div>
+
+            <!-- Patient Behavior & Adherence Analysis -->
+            <div id="profBehaviorCard" style="background:#f0fdfa; border:1px solid #ccfbf1; border-radius:10px; padding:12px; margin-bottom:12px; display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <strong style="font-size:12px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                  💓 Behavior & Adherence Watch
+                </strong>
+                <span id="profBehaviorBadge" class="badge badge-stable">🟢 GOOD BEHAVIOR</span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
+                  <div style="font-size:14px; font-weight:800;" id="profStatAdherence">100%</div>
+                  <div style="font-size:9px; color:var(--muted); font-weight:700;">COMPLIANCE</div>
+                </div>
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
+                  <div style="font-size:14px; font-weight:800; color:#15803d;" id="profStatTaken">0</div>
+                  <div style="font-size:9px; color:var(--muted); font-weight:700;">DOSES TAKEN</div>
+                </div>
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
+                  <div style="font-size:14px; font-weight:800; color:#dc2626;" id="profStatMissed">0</div>
+                  <div style="font-size:9px; color:var(--muted); font-weight:700;">MISSED</div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" style="width:100%; justify-content:center;" onclick="sendQuickDoseReminder()">
+                ⏰ Send Immediate Dose Reminder to Phone
+              </button>
+            </div>
+
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:3px;">Diagnosed Conditions:</div>
+              <div id="profConditions"></div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px; font-weight:700; color:#b91c1c; text-transform:uppercase; margin-bottom:3px;">Critical Drug Allergies:</div>
+              <div id="profAllergies"></div>
+            </div>
+
+            <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+              <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase;">Primary Proxy / Caregiver:</div>
+              <div style="font-size:12px; font-weight:700; margin-top:2px;" id="profCaregiverName">Sarah Bennett (Daughter)</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profCaregiverPhone">📞 +1 (555) 902-1144</div>
+            </div>
+          </div>
+
+          <!-- Push Directives -->
+          <div class="card">
+            <div class="card-title">Push Clinical Directive to Patient Device</div>
+            <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">
+              Directives appear instantly as a high-priority push directive inside the patient's PillGuardian mobile companion.
+            </div>
+
+            <!-- Quick Presets -->
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">1-Tap Quick Clinical Presets:</div>
+              <div style="display:flex; flex-direction:column; gap:5px;">
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Titrate Lisinopril to 20mg PO daily for blood pressure stabilization. Re-check BP in 7 days.')">💊 Titrate Lisinopril to 20mg daily</button>
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Order Fasting Metabolic Panel (HbA1c, BUN, Serum Creatinine, eGFR). Schedule with lab.')">🧪 Order Fasting Metabolic Panel</button>
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Restrict dietary sodium intake to <2,000 mg/day. Log resting morning weight daily.')">🧂 Restrict Sodium to <2,000 mg/day</button>
+                <button class="btn btn-outline" style="font-size:11px; text-align:left; justify-content:flex-start;" onclick="setPresetDirective('Schedule 14-day Telehealth RPM follow-up consultation with cardiology care team.')">🩺 Schedule 14-Day Telehealth Review</button>
+              </div>
+            </div>
+
+            <div class="directive-box">
+              <textarea class="directive-textarea" id="directiveText" placeholder="e.g. Please log morning blood pressure daily. Take Lisinopril 20mg with breakfast. Maintain low-sodium hydration."></textarea>
+              <button class="btn btn-primary" onclick="sendDirective()">📡 Dispatch Directive to Phone</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: Enroll New Patient -->
+  <div class="modal-backdrop" id="enrollPatientModal">
+    <div class="modal">
+      <div class="modal-title">Enroll New Patient Record</div>
+      <div class="modal-sub">Onboard patient to remote monitoring and configure companion app authorization</div>
+
+      <div class="form-group">
+        <label class="form-label">Patient Full Legal Name *</label>
+        <input type="text" class="form-control" id="enrollName" placeholder="e.g. Chloe Chen, Robert Bennett" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Account Email Address * (Used for Patient App Login)</label>
+        <input type="email" class="form-control" id="enrollEmail" placeholder="e.g. chloe.chen@example.com" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Contact Phone</label>
+          <input type="text" class="form-control" id="enrollPhone" placeholder="+1 (555) 000-0000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date of Birth (YYYY-MM-DD)</label>
+          <input type="text" class="form-control" id="enrollDOB" value="1982-04-18" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-control" id="enrollGender">
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Blood Type</label>
+          <select class="form-control" id="enrollBloodType">
+            <option value="O+">O+</option>
+            <option value="A+">A+</option>
+            <option value="B+">B+</option>
+            <option value="AB+">AB+</option>
+            <option value="O-">O-</option>
+            <option value="A-">A-</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Height</label>
+          <input type="text" class="form-control" id="enrollHeight" value="168 cm (5'6&quot;)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Weight</label>
+          <input type="text" class="form-control" id="enrollWeight" value="68 kg (150 lbs)" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Diagnosed Chronic Conditions (Comma-separated)</label>
+        <input type="text" class="form-control" id="enrollConditions" value="Hypertension, Mild Asthma" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Critical Drug Allergies (Comma-separated)</label>
+        <input type="text" class="form-control" id="enrollAllergies" value="Penicillin (Anaphylaxis)" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Designated Caregiver Name</label>
+          <input type="text" class="form-control" id="enrollCaregiverName" placeholder="e.g. Kevin Chen (Spouse)" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Caregiver Phone</label>
+          <input type="text" class="form-control" id="enrollCaregiverPhone" placeholder="+1 (555) 234-8890" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Initial Risk Level</label>
+        <select class="form-control" id="enrollRisk">
+          <option value="stable">Stable (Routine Follow-up)</option>
+          <option value="medium" selected>Medium (Hypertension / Dosing Titration)</option>
+          <option value="high">High Risk (Cardiac / Critical Alerts)</option>
+        </select>
+      </div>
+
+      <!-- Initial Medication & Dose (Optional) -->
+      <div style="background:#f0fdfa; border:1px solid #ccfbf1; padding:10px; border-radius:8px; margin-top:10px; margin-bottom:10px;">
+        <div style="font-size:11px; font-weight:800; color:#0d9488; margin-bottom:4px;">💊 Starting Medication & Dose (Optional)</div>
+        <div style="font-size:10px; color:#0f766e; margin-bottom:8px;">Add the patient's initial active prescription upon enrollment.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Medication Name</label>
+            <input type="text" class="form-control" id="enrollMedName" placeholder="e.g. Lisinopril, Metformin" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dosage & Strength</label>
+            <input type="text" class="form-control" id="enrollMedDosage" placeholder="e.g. 10mg, 500mg" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Schedule Times</label>
+          <input type="text" class="form-control" id="enrollMedTimes" value="08:00, 20:00" />
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:8px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:700; color:#166534;">
+          <input type="checkbox" id="enrollPreApprove" checked style="width:16px; height:16px;" />
+          <span>✓ Authorize App Login Access Immediately</span>
+        </label>
+        <div style="font-size:10px; color:#15803d; margin-top:4px;">
+          When checked, patient can instantly log into the mobile companion app with their email without waiting for approval.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEnrollPatientModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewPatient()">Enroll Patient into RPM Roster</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Prescription -->
+  <div class="modal-backdrop" id="addPrescriptionModal">
+    <div class="modal">
+      <div class="modal-title">Authorize New Prescription</div>
+      <div class="modal-sub" id="addModalPatientSub">Authorize medication for patient</div>
+
+      <div class="form-group">
+        <label class="form-label">Medication Name *</label>
+        <input type="text" class="form-control" id="newMedName" placeholder="e.g. Amlodipine, Metformin, Losartan" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Dosage & Strength *</label>
+        <input type="text" class="form-control" id="newMedDosage" placeholder="e.g. 10mg, 500mg, 25mcg" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Dosage Form</label>
+        <select class="form-control" id="newMedForm">
+          <option value="Tablet">Tablet</option>
+          <option value="Capsule">Capsule</option>
+          <option value="Injection">Injection</option>
+          <option value="Inhaler">Inhaler</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Schedule Times (Comma-separated)</label>
+        <input type="text" class="form-control" id="newMedTimes" value="08:00, 20:00" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Instructions / Food Intake</label>
+        <input type="text" class="form-control" id="newMedInstructions" placeholder="e.g. Take with food in the morning" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Initial Dispense Quantity (Stock)</label>
+        <input type="number" class="form-control" id="newMedStock" value="60" />
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAddPrescriptionModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewPrescription()">Authorize & Commit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Adjust Dosage -->
+  <div class="modal-backdrop" id="adjustDosageModal">
+    <div class="modal">
+      <div class="modal-title">Modify Prescription Dosage</div>
+      <div class="modal-sub" id="adjustModalSub">Adjusting medication dosage</div>
+
+      <div class="form-group">
+        <label class="form-label">New Dosage / Strength *</label>
+        <input type="text" class="form-control" id="adjustDosageInput" placeholder="e.g. 20mg" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Updated Instructions</label>
+        <textarea class="form-control" id="adjustInstructionsInput" rows="3" placeholder="e.g. Increased dosage for blood pressure stabilization."></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAdjustDosageModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAdjustedDosage()">Save Dosage Change</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toastMessage"></div>
+
+  <!-- Supabase Cloud Sync CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://xhqzpmrrihwjwkkccqkv.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable__n3FPbYiUWxole02NiAK7Q_K33tEb-Z';
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    const INITIAL_PATIENTS = [
+      {
+        id: "pat-1",
+        name: "Arthur Bennett",
+        email: "arthur.bennett@example.com",
+        dob: "1958-03-14",
+        age: 68,
+        gender: "Male",
+        bloodType: "O+",
+        weight: "84 kg (185 lbs)",
+        height: "178 cm (5'10\")",
+        bmi: "BMI 26.5 (Overweight I)",
+        conditions: ["Type 2 Diabetes", "Essential Hypertension", "Mild Persistent Asthma"],
+        allergies: ["Penicillin (Severe Anaphylaxis)", "Sulfa Drugs (Rash)"],
+        riskLevel: "medium",
+        approvalStatus: "approved",
+        approvedBy: "Dr. Robert Henderson, M.D.",
+        registeredAt: "2026-10-01T10:00:00Z",
+        adherence: "85%",
+        streak: "14-Day Consecutive Streak",
+        bp: "122 / 78 mmHg",
+        bpCat: "AHA Category: Normal Optimal",
+        glucose: "104 mg/dL",
+        pulse: "72 BPM",
+        caregiverName: "Sarah Bennett (Daughter)",
+        caregiverPhone: "+1 (555) 902-1144",
+        medications: [
+          { id: "m-1", name: "Metformin HCl", dosage: "500mg", form: "Tablet", times: "08:00, 19:00", stock: 42, instructions: "Take with breakfast and dinner" },
+          { id: "m-2", name: "Lisinopril", dosage: "10mg", form: "Tablet", times: "08:00", stock: 4, instructions: "Take in the morning with water" },
+          { id: "m-3", name: "Atorvastatin", dosage: "20mg", form: "Capsule", times: "21:30", stock: 28, instructions: "Take at bedtime" },
+          { id: "m-4", name: "Albuterol Inhaler", dosage: "90mcg", form: "Inhaler", times: "As needed", stock: 140, instructions: "Inhale 2 puffs for wheezing" }
+        ]
+      },
+      {
+        id: "pat-2",
+        name: "Eleanor Vance",
+        email: "eleanor.vance@example.com",
+        dob: "1954-08-22",
+        age: 72,
+        gender: "Female",
+        bloodType: "A-",
+        weight: "62 kg (136 lbs)",
+        height: "162 cm (5'4\")",
+        bmi: "BMI 23.6 (Normal)",
+        conditions: ["Congestive Heart Failure", "Atrial Fibrillation", "CKD Stage 2"],
+        allergies: ["Aspirin (GI Bleeding)", "ACE Inhibitors (Severe Cough)"],
+        riskLevel: "high",
+        approvalStatus: "approved",
+        approvedBy: "Dr. Robert Henderson, M.D.",
+        registeredAt: "2026-10-05T11:20:00Z",
+        adherence: "64%",
+        streak: "Missed Yesterday Evening",
+        bp: "148 / 92 mmHg",
+        bpCat: "AHA Category: Stage 2 Hypertension Alert",
+        glucose: "138 mg/dL",
+        pulse: "88 BPM (Irregular)",
+        caregiverName: "David Vance (Son)",
+        caregiverPhone: "+1 (555) 883-4412",
+        medications: [
+          { id: "m-201", name: "Furosemide (Lasix)", dosage: "40mg", form: "Tablet", times: "08:00", stock: 18, instructions: "Take in morning to prevent nighttime urination" },
+          { id: "m-202", name: "Carvedilol", dosage: "12.5mg", form: "Tablet", times: "08:00, 20:00", stock: 22, instructions: "Take with meals" },
+          { id: "m-203", name: "Apixaban (Eliquis)", dosage: "5mg", form: "Tablet", times: "09:00, 21:00", stock: 14, instructions: "Do not skip doses. Anticoagulant." }
+        ]
+      },
+      {
+        id: "pat-3",
+        name: "Marcus Davis",
+        email: "marcus.davis@example.com",
+        dob: "1967-11-05",
+        age: 59,
+        gender: "Male",
+        bloodType: "B+",
+        weight: "91 kg (200 lbs)",
+        height: "183 cm (6'0\")",
+        bmi: "BMI 27.2 (Overweight I)",
+        conditions: ["Hypertension", "Hyperlipidemia", "Pre-diabetes"],
+        allergies: ["No Known Drug Allergies (NKDA)"],
+        riskLevel: "stable",
+        approvalStatus: "approved",
+        approvedBy: "Dr. Robert Henderson, M.D.",
+        registeredAt: "2026-10-10T15:45:00Z",
+        adherence: "96%",
+        streak: "28-Day Perfect Streak",
+        bp: "118 / 74 mmHg",
+        bpCat: "AHA Category: Normal Optimal",
+        glucose: "98 mg/dL",
+        pulse: "68 BPM",
+        caregiverName: "Elena Davis (Spouse)",
+        caregiverPhone: "+1 (555) 774-3321",
+        medications: [
+          { id: "m-301", name: "Losartan Potassium", dosage: "50mg", form: "Tablet", times: "08:00", stock: 55, instructions: "Take once daily in morning" },
+          { id: "m-302", name: "Rosuvastatin", dosage: "10mg", form: "Tablet", times: "21:00", stock: 40, instructions: "Take in the evening" }
+        ]
+      },
+      {
+        id: "pat-4",
+        name: "Chloe Chen",
+        email: "chloe.chen@example.com",
+        dob: "1981-04-18",
+        age: 45,
+        gender: "Female",
+        bloodType: "AB+",
+        weight: "68 kg (150 lbs)",
+        height: "165 cm (5'5\")",
+        bmi: "BMI 25.0 (Normal)",
+        conditions: ["Gestational Diabetes Hx", "Mild Hypertension"],
+        allergies: ["Latex", "Ciprofloxacin"],
+        riskLevel: "medium",
+        approvalStatus: "pending",
+        registeredAt: "2026-10-17T08:10:00Z",
+        adherence: "78%",
+        streak: "3-Day Streak",
+        bp: "130 / 84 mmHg",
+        bpCat: "AHA Category: Pre-hypertension",
+        glucose: "115 mg/dL",
+        pulse: "76 BPM",
+        caregiverName: "Kevin Chen (Husband)",
+        caregiverPhone: "+1 (555) 234-8890",
+        medications: [
+          { id: "m-401", name: "Hydrochlorothiazide", dosage: "25mg", form: "Tablet", times: "08:00", stock: 30, instructions: "Take with breakfast" }
+        ]
+      }
+    ];
+
+    // Clean Slate by Default: Load real clinician roster from LocalStorage, default to empty array
+    let patients = [];
+    try {
+      const stored = localStorage.getItem('pill_guardian_web_patients_v2');
+      patients = stored ? JSON.parse(stored) : [];
+    } catch {
+      patients = [];
+    }
+
+    let currentPatientIndex = 0;
+    let currentRiskFilter = 'all';
+    let currentAdjustMedId = null;
+
+    function savePatients() {
+      try {
+        localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify(patients));
+      } catch (e) {
+        console.warn('Storage save error:', e);
+      }
+    }
+
+    function resetToCleanSlate() {
+      if (confirm("Wipe all sample dummy data and start fresh? You can then enroll real patients and set their doses.")) {
+        patients = [];
+        currentPatientIndex = 0;
+        localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify([]));
+        localStorage.setItem('pill_guardian_fresh_reset', 'true');
+        renderSidebar();
+        renderPatientDetails();
+        showToast("Clean slate activated. All sample data cleared. Tap '+ Enroll' to add your real patients.");
+      }
+    }
+
+    function restoreSampleData() {
+      patients = JSON.parse(JSON.stringify(INITIAL_PATIENTS));
+      currentPatientIndex = 0;
+      localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify(patients));
+      localStorage.removeItem('pill_guardian_fresh_reset');
+      renderSidebar();
+      renderPatientDetails();
+      showToast("Demo cohort restored with sample patients.");
+    }
+
+    function sendQuickDoseReminder() {
+      const p = patients[currentPatientIndex];
+      if (!p) return;
+      const firstMed = (p.medications && p.medications[0]) ? `${p.medications[0].name} (${p.medications[0].dosage})` : 'scheduled medication';
+      const msg = prompt(`Enter dose reminder message to push to ${p.name}'s phone:`, `Reminder from Dr. Henderson: Time to take your ${firstMed} now with a glass of water.`);
+      if (msg) {
+        p.lastReminderSent = new Date().toISOString();
+        savePatients();
+        showToast(`⏰ Immediate Dose Reminder dispatched to ${p.name}'s phone: "${msg.substring(0, 45)}..."`);
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toastMessage');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    function renderPendingAlerts() {
+      const container = document.getElementById('pendingAlertsContainer');
+      const pendingList = patients.filter(p => p.approvalStatus === 'pending');
+      const countPending = document.getElementById('countPending');
+      const kpiPending = document.getElementById('kpiPendingCount');
+      if (countPending) countPending.innerText = pendingList.length;
+      if (kpiPending) kpiPending.innerText = pendingList.length;
+      document.getElementById('kpiPatients').innerText = patients.length;
+      document.getElementById('countAll').innerText = patients.length;
+
+      if (pendingList.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = `
+        <div class="pending-alert-box">
+          <div class="pending-alert-top">
+            <div class="pending-alert-title">
+              <span>⏳</span>
+              <span>${pendingList.length} Patient Access Request${pendingList.length > 1 ? 's' : ''} Awaiting Physician Approval</span>
+            </div>
+            <button class="btn btn-success btn-sm" onclick="approveAllPending()">✓ Approve All (${pendingList.length})</button>
+          </div>
+          <div class="pending-alert-sub">
+            The following patients registered via the PillGuardian companion app. Authorize their accounts to unlock active dosing, vitals logging, and EHR synchronization.
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+      `;
+
+      pendingList.forEach(p => {
+        html += `
+          <div class="pending-card-row">
+            <div>
+              <strong style="font-size:13px;">${p.name}</strong>
+              <span style="font-size:11px; color:var(--muted); margin-left:8px;">${p.email} • ${p.conditions[0] || 'New Patient'}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-outline btn-sm" onclick="selectPatientById('${p.id}')">View Details</button>
+              <button class="btn btn-primary btn-sm" onclick="updatePatientApproval('${p.id}', 'approved')">✓ Authorize</button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></div>`;
+      container.innerHTML = html;
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById('patientList');
+      const q = document.getElementById('searchPatient').value.toLowerCase();
+      list.innerHTML = '';
+
+      patients.forEach((p, idx) => {
+        const matchesSearch = p.name.toLowerCase().includes(q) ||
+          p.conditions.some(c => c.toLowerCase().includes(q)) ||
+          (p.email && p.email.toLowerCase().includes(q));
+
+        let matchesFilter = true;
+        if (currentRiskFilter === 'pending') {
+          matchesFilter = p.approvalStatus === 'pending';
+        } else if (currentRiskFilter === 'good') {
+          matchesFilter = (parseInt(p.adherence, 10) || 100) >= 80;
+        } else if (currentRiskFilter === 'attention') {
+          matchesFilter = (parseInt(p.adherence, 10) || 100) < 80 || (p.dosesMissed || 0) > 0;
+        } else if (currentRiskFilter !== 'all') {
+          matchesFilter = p.riskLevel === currentRiskFilter;
+        }
+
+        if (!matchesSearch || !matchesFilter) return;
+
+        const isPending = p.approvalStatus === 'pending';
+        const isGood = (parseInt(p.adherence, 10) || 100) >= 80;
+        const badgeClass = isPending ? 'badge-pending' : (isGood ? 'badge-stable' : 'badge-high');
+        const badgeLabel = isPending ? 'PENDING' : (isGood ? '🟢 GOOD' : '🔴 ATTENTION');
+        const activeClass = idx === currentPatientIndex ? 'active' : '';
+
+        const div = document.createElement('div');
+        div.className = `patient-item ${activeClass}`;
+        div.onclick = () => selectPatient(idx);
+        div.innerHTML = `
+          <div class="patient-name-row">
+            <span class="patient-name">${p.name}</span>
+            <span class="badge ${badgeClass}">${badgeLabel}</span>
+          </div>
+          <div class="patient-meta">${p.email || ''} • Age ${p.age} • ${p.conditions[0] || 'Care Monitoring'}</div>
+          <div class="patient-sub-stats">
+            <span>BP: ${p.bp ? p.bp.split(' ')[0] : '120/80'}</span>
+            <span>• ${p.adherence || '100%'} Adherence</span>
+            <span>• Doses: ${p.dosesTaken || 14}/${(p.dosesTaken || 14) + (p.dosesMissed || 0)}</span>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+
+      renderPendingAlerts();
+    }
+
+    function selectPatient(idx) {
+      currentPatientIndex = idx;
+      renderSidebar();
+      renderPatientDetails();
+    }
+
+    function selectPatientById(patId) {
+      const idx = patients.findIndex(p => p.id === patId);
+      if (idx >= 0) {
+        selectPatient(idx);
+      }
+    }
+
+    function setRiskFilter(filter, elem) {
+      currentRiskFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      elem.classList.add('active');
+      renderSidebar();
+    }
+
+    function filterPatients() {
+      renderSidebar();
+    }
+
+    function updatePatientApproval(patId, status) {
+      const p = patients.find(item => item.id === patId);
+      if (!p) return;
+
+      p.approvalStatus = status;
+      if (status === 'approved') {
+        p.approvedAt = new Date().toISOString();
+        p.approvedBy = 'Dr. Robert Henderson, M.D.';
+      }
+      savePatients();
+      renderSidebar();
+      renderPatientDetails();
+
+      const actionText = status === 'approved' ? 'authorized and granted login access' : 'suspended';
+      showToast(`✓ Patient ${p.name} ${actionText}. Real-time companion sync updated.`);
+
+      if (supabaseClient) {
+        supabaseClient.from('patient_profiles').upsert({
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          approval_status: status,
+          approved_by: 'Dr. Robert Henderson, M.D.',
+          updated_at: new Date().toISOString()
+        }).then(res => {
+          console.log('✓ Patient status synced to Supabase:', res);
+        }).catch(e => {
+          console.warn('Supabase sync notice:', e);
+        });
+      }
+    }
+
+    function approveAllPending() {
+      patients.forEach(p => {
+        if (p.approvalStatus === 'pending') {
+          p.approvalStatus = 'approved';
+          p.approvedAt = new Date().toISOString();
+          p.approvedBy = 'Dr. Robert Henderson, M.D.';
+        }
+      });
+      savePatients();
+      renderSidebar();
+      renderPatientDetails();
+      showToast('✓ All pending patient accounts authorized.');
+    }
+
+    function renderPatientDetails() {
+      const p = patients[currentPatientIndex];
+      const behCard = document.getElementById('profBehaviorCard');
+
+      if (!p || patients.length === 0) {
+        document.getElementById('profName').innerText = 'No Patients Enrolled';
+        document.getElementById('profMeta').innerText = 'Cohort is clear. Tap "+ Enroll" to onboard real patients and specify their medication doses.';
+        document.getElementById('profBio').innerText = '';
+        document.getElementById('profApprovalCard').innerHTML = '<div style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Clean slate ready for new clinical enrollments.</div>';
+        if (behCard) behCard.style.display = 'none';
+        document.getElementById('profConditions').innerHTML = '';
+        document.getElementById('profAllergies').innerHTML = '';
+        document.getElementById('kpiAdherence').innerText = '0%';
+        document.getElementById('kpiStreak').innerText = 'No Patients';
+        document.getElementById('kpiMedCount').innerText = '0 Meds';
+        document.getElementById('medTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">No active prescriptions. Tap "+ Prescribe New Medication" to add doses.</td></tr>';
+        return;
+      }
+
+      if (behCard) behCard.style.display = 'block';
+
+      document.getElementById('profName').innerText = p.name;
+      document.getElementById('profMeta').innerHTML = `DOB: ${p.dob} (Age ${p.age}) • Gender: ${p.gender} • Blood Type: <strong>${p.bloodType}</strong>`;
+      document.getElementById('profBio').innerText = `Height: ${p.height} • Weight: ${p.weight} • Email: ${p.email || 'N/A'}`;
+
+      // Authorization Widget
+      const authBox = document.getElementById('profApprovalCard');
+      const isApproved = p.approvalStatus === 'approved';
+      authBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong style="font-size:12px; display:flex; align-items:center; gap:6px;">
+            ${isApproved ? '🟢 App Access: Authorized' : '🟠 App Access: Pending Review'}
+          </strong>
+          <span class="badge ${isApproved ? 'badge-approved' : 'badge-pending'}">${p.approvalStatus ? p.approvalStatus.toUpperCase() : 'APPROVED'}</span>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">
+          ${isApproved ? `Authorized by ${p.approvedBy || 'Dr. Robert Henderson'} • Patient companion sync active` : 'Account registered. Medication dosing, schedule & vitals remain locked on phone until verified.'}
+        </div>
+        ${isApproved ?
+          `<button class="btn btn-danger btn-sm" style="width:100%; justify-content:center;" onclick="updatePatientApproval('${p.id}', 'pending')">Revoke / Suspend App Access</button>` :
+          `<button class="btn btn-primary btn-sm" style="width:100%; justify-content:center;" onclick="updatePatientApproval('${p.id}', 'approved')">✓ Authorize & Approve Patient Login</button>`
+        }
+      `;
+
+      // Update Behavior Card
+      const adhVal = parseInt(p.adherence, 10) || 100;
+      const isGoodAdh = adhVal >= 80;
+      const behBadge = document.getElementById('profBehaviorBadge');
+      if (behBadge) {
+        behBadge.className = `badge ${isGoodAdh ? 'badge-stable' : 'badge-high'}`;
+        behBadge.innerText = isGoodAdh ? '🟢 GOOD BEHAVIOR' : '🔴 NEEDS ATTENTION';
+      }
+      const statAdh = document.getElementById('profStatAdherence');
+      if (statAdh) statAdh.innerText = `${adhVal}%`;
+      const statTaken = document.getElementById('profStatTaken');
+      if (statTaken) statTaken.innerText = p.dosesTaken !== undefined ? p.dosesTaken : 18;
+      const statMissed = document.getElementById('profStatMissed');
+      if (statMissed) statMissed.innerText = p.dosesMissed !== undefined ? p.dosesMissed : 0;
+
+      // Conditions
+      const condContainer = document.getElementById('profConditions');
+      condContainer.innerHTML = (p.conditions || []).map(c => `<span class="tag-condition">${c}</span>`).join('');
+
+      // Allergies
+      const allgContainer = document.getElementById('profAllergies');
+      allgContainer.innerHTML = (p.allergies || []).map(a => `<span class="tag-allergy">⚠️ ${a}</span>`).join('');
+
+      // Caregiver
+      document.getElementById('profCaregiverName').innerText = p.caregiverName || 'Designated Proxy';
+      document.getElementById('profCaregiverPhone').innerText = `📞 ${p.caregiverPhone || 'N/A'}`;
+
+      // KPIs & Vitals
+      document.getElementById('kpiAdherence').innerText = p.adherence || '100%';
+      document.getElementById('kpiStreak').innerText = p.streak || 'Active Care';
+      document.getElementById('kpiMedCount').innerText = `${(p.medications || []).length} Meds`;
+      document.getElementById('valBP').innerText = p.bp || '120 / 80 mmHg';
+      document.getElementById('valBPCat').innerText = p.bpCat || 'AHA Category: Normal';
+      document.getElementById('valGlucose').innerText = p.glucose || '95 mg/dL';
+      document.getElementById('valPulse').innerText = p.pulse || '72 BPM';
+      document.getElementById('valWeight').innerText = (p.weight || '70 kg').split(' ')[0] + ' kg';
+      document.getElementById('valBMI').innerText = p.bmi || 'BMI 24.2';
+
+      // Drug Interaction box toggle
+      const alertBox = document.getElementById('interactionAlertBox');
+      alertBox.style.display = p.id === 'pat-1' ? 'block' : 'none';
+
+      // Prescriptions Table
+      const tbody = document.getElementById('medTableBody');
+      tbody.innerHTML = '';
+      const medList = p.medications || [];
+      document.getElementById('activePrescriptionCount').innerText = `(${medList.length} Active)`;
+
+      if (medList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--muted);">No medications prescribed yet. Tap "+ Prescribe New Medication" to add a dose.</td></tr>';
+      } else {
+        medList.forEach(m => {
+          const stockStyle = m.stock <= 7 ? 'color:#b91c1c; font-weight:800;' : 'font-weight:700;';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${m.name}</strong> <span class="med-badge">${m.form}</span><div style="font-size:11px; color:var(--muted);">${m.instructions}</div></td>
+            <td><strong style="color:var(--primary);">${m.dosage}</strong></td>
+            <td>${m.times}</td>
+            <td><span style="${stockStyle}">${m.stock} left</span></td>
+            <td class="actions-cell">
+              <button class="btn btn-outline btn-sm" onclick="openAdjustDosageModal('${m.id}')">✏️ Adjust Dose</button>
+              <button class="btn btn-danger btn-sm" onclick="discontinueMedication('${m.id}')">🛑 Discontinue</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    // Modal: Enroll New Patient
+    function openEnrollPatientModal() {
+      document.getElementById('enrollName').value = '';
+      document.getElementById('enrollEmail').value = '';
+      document.getElementById('enrollPhone').value = '';
+      document.getElementById('enrollCaregiverName').value = '';
+      document.getElementById('enrollCaregiverPhone').value = '';
+      if (document.getElementById('enrollMedName')) document.getElementById('enrollMedName').value = '';
+      if (document.getElementById('enrollMedDosage')) document.getElementById('enrollMedDosage').value = '';
+      if (document.getElementById('enrollMedTimes')) document.getElementById('enrollMedTimes').value = '08:00, 20:00';
+      document.getElementById('enrollPatientModal').style.display = 'flex';
+    }
+
+    function closeEnrollPatientModal() {
+      document.getElementById('enrollPatientModal').style.display = 'none';
+    }
+
+    function saveNewPatient() {
+      const name = document.getElementById('enrollName').value.trim();
+      const email = document.getElementById('enrollEmail').value.trim();
+      const phone = document.getElementById('enrollPhone').value.trim() || '+1 (555) 000-0000';
+      const dob = document.getElementById('enrollDOB').value.trim() || '1982-04-18';
+      const gender = document.getElementById('enrollGender').value;
+      const bloodType = document.getElementById('enrollBloodType').value;
+      const height = document.getElementById('enrollHeight').value.trim() || '170 cm';
+      const weight = document.getElementById('enrollWeight').value.trim() || '70 kg';
+      const conditions = document.getElementById('enrollConditions').value.split(',').map(c => c.trim()).filter(Boolean);
+      const allergies = document.getElementById('enrollAllergies').value.split(',').map(a => a.trim()).filter(Boolean);
+      const caregiverName = document.getElementById('enrollCaregiverName').value.trim() || 'Primary Caregiver';
+      const caregiverPhone = document.getElementById('enrollCaregiverPhone').value.trim() || '+1 (555) 000-0001';
+      const riskLevel = document.getElementById('enrollRisk').value;
+      const preApprove = document.getElementById('enrollPreApprove').checked;
+
+      const medName = document.getElementById('enrollMedName') ? document.getElementById('enrollMedName').value.trim() : '';
+      const medDosage = document.getElementById('enrollMedDosage') ? document.getElementById('enrollMedDosage').value.trim() : '';
+      const medTimes = document.getElementById('enrollMedTimes') ? document.getElementById('enrollMedTimes').value.trim() || '08:00, 20:00' : '08:00, 20:00';
+
+      if (!name || !email) {
+        alert('Please enter patient full legal name and account email address.');
+        return;
+      }
+
+      const birthYear = parseInt(dob.split('-')[0], 10) || 1982;
+      const age = Math.max(1, new Date().getFullYear() - birthYear);
+
+      const initialMeds = [];
+      if (medName && medDosage) {
+        initialMeds.push({
+          id: `m-${Date.now()}`,
+          name: medName,
+          dosage: medDosage,
+          form: 'Tablet',
+          times: medTimes,
+          stock: 60,
+          instructions: 'Take as directed by physician'
+        });
+      }
+
+      const newPat = {
+        id: `pat-${Date.now()}`,
+        name,
+        email,
+        phone,
+        dob,
+        age,
+        gender,
+        bloodType,
+        height,
+        weight,
+        bmi: "BMI 24.2 (Normal)",
+        conditions: conditions.length > 0 ? conditions : ["Essential Hypertension"],
+        allergies: allergies.length > 0 ? allergies : ["No Known Drug Allergies (NKDA)"],
+        riskLevel,
+        approvalStatus: preApprove ? 'approved' : 'pending',
+        approvedAt: preApprove ? new Date().toISOString() : undefined,
+        approvedBy: preApprove ? 'Dr. Robert Henderson, M.D.' : undefined,
+        registeredAt: new Date().toISOString(),
+        adherence: "100%",
+        dosesTaken: 0,
+        dosesMissed: 0,
+        streak: "New Patient (Active)",
+        bp: "120 / 80 mmHg",
+        bpCat: "AHA Category: Normal",
+        glucose: "98 mg/dL",
+        pulse: "72 BPM",
+        caregiverName,
+        caregiverPhone,
+        medications: initialMeds
+      };
+
+      patients.unshift(newPat);
+      currentPatientIndex = 0;
+      savePatients();
+      closeEnrollPatientModal();
+      renderSidebar();
+      renderPatientDetails();
+      showToast(`✓ Patient ${name} enrolled successfully with ${newPat.approvalStatus === 'approved' ? 'Active Login Access' : 'Pending Status'}.${initialMeds.length > 0 ? ` Prescribed starting dose of ${medName} (${medDosage}).` : ''}`);
+
+      if (supabaseClient) {
+        supabaseClient.from('patient_profiles').insert({
+          id: newPat.id,
+          name: newPat.name,
+          email: newPat.email,
+          phone: newPat.phone,
+          conditions: newPat.conditions,
+          allergies: newPat.allergies,
+          approval_status: newPat.approvalStatus,
+          approved_by: newPat.approvedBy,
+          created_at: new Date().toISOString()
+        }).then(res => {
+          console.log('✓ Cloud Synced Patient Profile to Supabase:', res);
+        }).catch(err => {
+          console.warn('Supabase sync notice:', err);
+        });
+      }
+    }
+
+    // Modal: Add Prescription
+    function openAddPrescriptionModal() {
+      const p = patients[currentPatientIndex];
+      document.getElementById('addModalPatientSub').innerText = `Authorizing for: ${p.name}`;
+      document.getElementById('newMedName').value = '';
+      document.getElementById('newMedDosage').value = '';
+      document.getElementById('newMedInstructions').value = '';
+      document.getElementById('newMedTimes').value = '08:00, 20:00';
+      document.getElementById('newMedStock').value = '60';
+      document.getElementById('addPrescriptionModal').style.display = 'flex';
+    }
+
+    function closeAddPrescriptionModal() {
+      document.getElementById('addPrescriptionModal').style.display = 'none';
+    }
+
+    function saveNewPrescription() {
+      const name = document.getElementById('newMedName').value.trim();
+      const dosage = document.getElementById('newMedDosage').value.trim();
+      const form = document.getElementById('newMedForm').value;
+      const times = document.getElementById('newMedTimes').value.trim();
+      const instructions = document.getElementById('newMedInstructions').value.trim() || 'Take as directed by doctor';
+      const stock = parseInt(document.getElementById('newMedStock').value, 10) || 30;
+
+      if (!name || !dosage) {
+        alert('Please enter medication name and dosage.');
+        return;
+      }
+
+      const p = patients[currentPatientIndex];
+      const newMed = {
+        id: `med-${Date.now()}`,
+        name,
+        dosage,
+        form,
+        times,
+        stock,
+        instructions
+      };
+
+      p.medications.unshift(newMed);
+      savePatients();
+      closeAddPrescriptionModal();
+      renderPatientDetails();
+      showToast(`Prescription for ${name} (${dosage}) authorized for ${p.name}. Synchronized to patient phone.`);
+
+      if (supabaseClient) {
+        supabaseClient.from('medications').insert({
+          name: newMed.name,
+          dosage: newMed.dosage,
+          form: newMed.form.toLowerCase(),
+          instructions: newMed.instructions,
+          frequency: 'daily',
+          times: [newMed.times],
+          stock_current: newMed.stock,
+          stock_refill_alert: 7,
+          prescribed_by: 'Dr. Robert Henderson, M.D.',
+          is_active: true,
+          created_at: new Date().toISOString()
+        }).then(res => {
+          console.log('✓ Cloud Synced to Supabase:', res);
+        }).catch(err => {
+          console.warn('Supabase sync notice:', err);
+        });
+      }
+    }
+
+    // Modal: Adjust Dosage
+    function openAdjustDosageModal(medId) {
+      currentAdjustMedId = medId;
+      const p = patients[currentPatientIndex];
+      const med = p.medications.find(m => m.id === medId);
+      if (!med) return;
+
+      document.getElementById('adjustModalSub').innerText = `Modifying ${med.name} for ${p.name}`;
+      document.getElementById('adjustDosageInput').value = med.dosage;
+      document.getElementById('adjustInstructionsInput').value = med.instructions;
+      document.getElementById('adjustDosageModal').style.display = 'flex';
+    }
+
+    function closeAdjustDosageModal() {
+      document.getElementById('adjustDosageModal').style.display = 'none';
+      currentAdjustMedId = null;
+    }
+
+    function saveAdjustedDosage() {
+      if (!currentAdjustMedId) return;
+      const newDose = document.getElementById('adjustDosageInput').value.trim();
+      const newInstr = document.getElementById('adjustInstructionsInput').value.trim();
+
+      if (!newDose) {
+        alert('Please enter the new dosage strength.');
+        return;
+      }
+
+      const p = patients[currentPatientIndex];
+      const med = p.medications.find(m => m.id === currentAdjustMedId);
+      if (!med) return;
+
+      med.dosage = newDose;
+      if (newInstr) med.instructions = newInstr;
+
+      savePatients();
+      closeAdjustDosageModal();
+      renderPatientDetails();
+      showToast(`Adjusted dosage of ${med.name} to ${newDose} for ${p.name}. Dosing times & schedule synced.`);
+    }
+
+    function discontinueMedication(medId) {
+      const p = patients[currentPatientIndex];
+      const med = p.medications.find(m => m.id === medId);
+      if (!med) return;
+
+      if (!confirm(`Are you sure you want to discontinue ${med.name} (${med.dosage}) for ${p.name}?`)) {
+        return;
+      }
+
+      p.medications = p.medications.filter(m => m.id !== medId);
+      savePatients();
+      renderPatientDetails();
+      showToast(`Discontinued ${med.name}. Medication removed from patient regimen.`);
+    }
+
+    function setPresetDirective(preset) {
+      document.getElementById('directiveText').value = preset;
+    }
+
+    function sendDirective() {
+      const text = document.getElementById('directiveText').value.trim();
+      const p = patients[currentPatientIndex];
+      if (!text) {
+        alert('Please enter a clinical directive instruction.');
+        return;
+      }
+
+      document.getElementById('directiveText').value = '';
+      showToast(`📡 Directive dispatched to ${p.name}'s mobile device: "${text.substring(0, 40)}..."`);
+    }
+
+    function exportAuditDossier() {
+      const p = patients[currentPatientIndex];
+      window.print();
+    }
+
+    // Initial Render
+    renderSidebar();
+    renderPatientDetails();
+  </script>
+</body>
+</html>

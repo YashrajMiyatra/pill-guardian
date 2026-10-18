@@ -83,7 +83,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const authUser: AuthUser = {
             id: session.user.id,
             email: session.user.email || '',
-            fullName: session.user.user_metadata?.full_name || 'Arthur Bennett',
+            fullName:
+              session.user.user_metadata?.full_name ||
+              (session.user.email ? session.user.email.split('@')[0] : 'Patient User'),
             role,
             isDemo: false,
             approvalStatus,
@@ -101,8 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (savedDemo === 'true') {
         setUser({
           id: 'demo-user-1',
-          email: savedRole === 'doctor' ? 'dr.henderson@hospital.org' : 'arthur.bennett@example.com',
-          fullName: savedRole === 'doctor' ? 'Dr. Robert Henderson, M.D.' : 'Arthur Bennett',
+          email: savedRole === 'doctor' ? 'dr.henderson@hospital.org' : 'patient@example.com',
+          fullName: savedRole === 'doctor' ? 'Dr. Robert Henderson, M.D.' : 'Patient User',
           role: savedRole,
           isDemo: true,
           approvalStatus: 'approved',
@@ -127,8 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await AsyncStorage.setItem(USER_ROLE_KEY, role);
     setUser({
       id: 'demo-user-1',
-      email: role === 'doctor' ? 'dr.henderson@hospital.org' : 'arthur.bennett@example.com',
-      fullName: role === 'doctor' ? 'Dr. Robert Henderson, M.D.' : 'Arthur Bennett',
+      email: role === 'doctor' ? 'dr.henderson@hospital.org' : 'patient@example.com',
+      fullName: role === 'doctor' ? 'Dr. Robert Henderson, M.D.' : 'Patient User',
       role,
       isDemo: true,
       approvalStatus: 'approved',
@@ -147,13 +149,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user.isDemo && newRole === 'doctor'
             ? 'Dr. Robert Henderson, M.D.'
             : user.isDemo && newRole === 'patient'
-            ? 'Arthur Bennett'
+            ? 'Patient User'
             : user.fullName,
         email:
           user.isDemo && newRole === 'doctor'
             ? 'dr.henderson@hospital.org'
             : user.isDemo && newRole === 'patient'
-            ? 'arthur.bennett@example.com'
+            ? 'patient@example.com'
             : user.email,
       });
     }

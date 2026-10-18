@@ -42,48 +42,36 @@ export function getTimeCategory(timeStr: string): 'Morning' | 'Afternoon' | 'Eve
 }
 
 export const StorageService = {
-  // Initialize default data if not already done and not in clean reset state
+  // Initialize default data - production clean slate (no dummy data)
   async initDefaults(): Promise<void> {
     try {
-      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
-      if (isFresh === 'true') {
-        // User explicitly wants clean state (no dummy data)
-        return;
-      }
-
       const initialized = await AsyncStorage.getItem(KEYS.INITIALIZED);
       if (!initialized) {
-        await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(SEED_MEDICATIONS));
-        await AsyncStorage.setItem(KEYS.VITALS, JSON.stringify(SEED_VITALS));
-        await AsyncStorage.setItem(KEYS.PROFILE, JSON.stringify(SEED_USER_PROFILE));
-        await AsyncStorage.setItem(KEYS.CAREGIVER, JSON.stringify(SEED_CAREGIVER));
-        await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(SEED_PATIENTS));
+        // Start completely clean in production
+        await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify([]));
+        await AsyncStorage.setItem(KEYS.VITALS, JSON.stringify([]));
+        await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify([]));
         await AsyncStorage.setItem(KEYS.INITIALIZED, 'true');
       }
     } catch (e) {
-      console.error('Error initializing default storage data:', e);
+      console.error('Error initializing clean storage data:', e);
     }
   },
 
   // Medications CRUD with Patient Association
   async getMedications(patientId?: string): Promise<Medication[]> {
     try {
-      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.MEDICATIONS);
       let list: Medication[] = [];
 
       if (data) {
         list = JSON.parse(data);
-      } else if (isFresh !== 'true') {
-        list = SEED_MEDICATIONS;
       }
 
       if (!patientId || patientId === 'all') {
         return list;
       }
-      return list.filter(
-        m => m.patientId === patientId || (!m.patientId && (patientId === 'pat-1' || patientId === 'default'))
-      );
+      return list.filter(m => m.patientId === patientId);
     } catch (e) {
       console.error('Error fetching medications:', e);
       return [];
@@ -380,11 +368,9 @@ export const StorageService = {
   // Vitals CRUD
   async getVitals(): Promise<VitalLog[]> {
     try {
-      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.VITALS);
       if (data) return JSON.parse(data);
-      if (isFresh === 'true') return [];
-      return SEED_VITALS;
+      return [];
     } catch (e) {
       console.error('Error fetching vitals:', e);
       return [];
@@ -406,29 +392,38 @@ export const StorageService = {
   // Profile & Caregiver
   async getProfile(): Promise<UserProfile> {
     try {
-      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.PROFILE);
       if (data) return JSON.parse(data);
-      if (isFresh === 'true') {
-        return {
-          fullName: 'New Patient',
-          dateOfBirth: '1980-01-01',
-          bloodType: 'O+',
-          allergies: [],
-          chronicConditions: [],
-          emergencyNotes: '',
-          primaryDoctor: {
-            name: 'Dr. Robert Henderson, M.D.',
-            specialty: 'Cardiology',
-            phone: '+1 (555) 721-0044',
-            hospital: 'Metropolitan General Hospital',
-          },
-        };
-      }
-      return SEED_USER_PROFILE;
+      return {
+        fullName: 'New Patient',
+        dateOfBirth: '',
+        bloodType: 'O+',
+        allergies: [],
+        chronicConditions: [],
+        emergencyNotes: '',
+        primaryDoctor: {
+          name: 'Dr. Robert Henderson, M.D.',
+          specialty: 'Cardiology',
+          phone: '',
+          hospital: 'Metropolitan General Hospital',
+        },
+      };
     } catch (e) {
       console.error('Error fetching profile:', e);
-      return SEED_USER_PROFILE;
+      return {
+        fullName: 'New Patient',
+        dateOfBirth: '',
+        bloodType: 'O+',
+        allergies: [],
+        chronicConditions: [],
+        emergencyNotes: '',
+        primaryDoctor: {
+          name: 'Dr. Robert Henderson, M.D.',
+          specialty: 'Cardiology',
+          phone: '',
+          hospital: 'Metropolitan General Hospital',
+        },
+      };
     }
   },
 
@@ -442,22 +437,24 @@ export const StorageService = {
 
   async getCaregiver(): Promise<CaregiverContact> {
     try {
-      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.CAREGIVER);
       if (data) return JSON.parse(data);
-      if (isFresh === 'true') {
-        return {
-          id: 'care-none',
-          name: 'Not Assigned',
-          relationship: 'Primary Caregiver',
-          phone: '',
-          isEmergency: false,
-        };
-      }
-      return SEED_CAREGIVER;
+      return {
+        id: 'care-none',
+        name: 'Not Assigned',
+        relationship: 'Primary Caregiver',
+        phone: '',
+        isEmergency: false,
+      };
     } catch (e) {
       console.error('Error fetching caregiver:', e);
-      return SEED_CAREGIVER;
+      return {
+        id: 'care-none',
+        name: 'Not Assigned',
+        relationship: 'Primary Caregiver',
+        phone: '',
+        isEmergency: false,
+      };
     }
   },
 
@@ -469,19 +466,14 @@ export const StorageService = {
     }
   },
 
-  // Patient Cohort & Approval System
+  // Patient Cohort & Approval System - Production Clean State
   async getPatients(): Promise<PatientAccount[]> {
     try {
-      const isFresh = await AsyncStorage.getItem(KEYS.FRESH_RESET);
       const data = await AsyncStorage.getItem(KEYS.PATIENTS);
       if (data) {
         return JSON.parse(data);
       }
-      if (isFresh === 'true') {
-        return [];
-      }
-      await AsyncStorage.setItem(KEYS.PATIENTS, JSON.stringify(SEED_PATIENTS));
-      return SEED_PATIENTS;
+      return [];
     } catch (e) {
       console.error('Error fetching patients:', e);
       return [];

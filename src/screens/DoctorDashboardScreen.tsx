@@ -71,8 +71,8 @@ const CLINICAL_PRESETS = [
 export const DoctorDashboardScreen: React.FC = () => {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<DoctorTab>('patients');
-  const [patients, setPatients] = useState<PatientAccount[]>(SEED_PATIENTS);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>('pat-1');
+  const [patients, setPatients] = useState<PatientAccount[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [patientSearch, setPatientSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState<'all' | 'high' | 'medium' | 'stable'>('all');
   const [behaviorFilter, setBehaviorFilter] = useState<'all' | 'good' | 'attention' | 'pending'>('all');
@@ -138,11 +138,11 @@ export const DoctorDashboardScreen: React.FC = () => {
     try {
       const todayStr = new Date().toISOString().split('T')[0];
       const [m, v, p, c, d, patList] = await Promise.all([
-        StorageService.getMedications(selectedPatientId),
+        StorageService.getMedications(selectedPatientId || undefined),
         StorageService.getVitals(),
         StorageService.getProfile(),
         StorageService.getCaregiver(),
-        StorageService.getDailyDoses(todayStr, selectedPatientId),
+        StorageService.getDailyDoses(todayStr, selectedPatientId || undefined),
         StorageService.getPatients(),
       ]);
       setActiveMeds(m);
@@ -151,14 +151,21 @@ export const DoctorDashboardScreen: React.FC = () => {
       setCaregiver(c);
       setDoses(d);
       setPatients(patList);
+      if (patList.length > 0) {
+        if (!selectedPatientId || !patList.find(item => item.id === selectedPatientId)) {
+          setSelectedPatientId(patList[0].id);
+        }
+      } else {
+        setSelectedPatientId('');
+      }
       setInteractionAlerts(InteractionCheckerService.checkInteractions(m));
     } catch (e) {
       console.warn('Error loading patient details:', e);
     }
   };
 
-  const selectedPatient: PatientAccount =
-    patients.find(p => p.id === selectedPatientId) || patients[0] || SEED_PATIENTS[0];
+  const selectedPatient: PatientAccount | null =
+    patients.find(p => p.id === selectedPatientId) || patients[0] || null;
 
   const pendingPatients = patients.filter(p => p.approvalStatus === 'pending');
 
@@ -385,7 +392,7 @@ export const DoctorDashboardScreen: React.FC = () => {
   };
 
   const handleSaveAdjustedPrescription = async () => {
-    if (!selectedMedForAdjust) return;
+    if (!selectedPatient || !selectedMedForAdjust) return;
     if (!adjustedDosage.trim()) {
       Alert.alert('Validation Error', 'Dosage cannot be empty.');
       return;
@@ -409,6 +416,7 @@ export const DoctorDashboardScreen: React.FC = () => {
 
   // Doctor discontinues medication
   const handleDiscontinueMedication = (med: Medication) => {
+    if (!selectedPatient) return;
     Alert.alert(
       'Discontinue Prescription',
       `Discontinue ${med.name} (${med.dosage}) for ${selectedPatient.name}?`,
@@ -433,6 +441,10 @@ export const DoctorDashboardScreen: React.FC = () => {
 
   // Doctor adds new prescription
   const handleSaveNewMedication = async () => {
+    if (!selectedPatient) {
+      Alert.alert('No Patient', 'Please enroll or select a patient first.');
+      return;
+    }
     if (!newMedName.trim() || !newMedDosage.trim()) {
       Alert.alert('Required Fields', 'Please enter medication name and dosage.');
       return;
@@ -486,6 +498,10 @@ export const DoctorDashboardScreen: React.FC = () => {
   };
 
   const handleSendMessage = () => {
+    if (!selectedPatient) {
+      Alert.alert('No Patient', 'Please select a patient first.');
+      return;
+    }
     if (!doctorNote.trim()) {
       Alert.alert('Empty Directive', 'Please enter a clinical note or prescription adjustment.');
       return;
@@ -539,10 +555,12 @@ export const DoctorDashboardScreen: React.FC = () => {
       {/* Patient Active Bar */}
       <View style={styles.activePatientBar}>
         <Text style={styles.activePatientLabel}>CURRENT PATIENT:</Text>
-        <Text style={styles.activePatientName}>{selectedPatient.name}</Text>
-        <Text style={styles.activePatientMeta}>
-          ({selectedPatient.age}y {selectedPatient.gender.charAt(0)} • {selectedPatient.conditions[0]})
-        </Text>
+        <Text style={styles.activePatientName}>{selectedPatient ? selectedPatient.name : 'No Patient Selected'}</Text>
+        {selectedPatient && (
+          <Text style={styles.activePatientMeta}>
+            ({selectedPatient.age}y {selectedPatient.gender.charAt(0)} • {selectedPatient.conditions[0] || 'Care Monitoring'})
+          </Text>
+        )}
       </View>
 
       {/* Main Content Area */}
@@ -709,192 +727,209 @@ export const DoctorDashboardScreen: React.FC = () => {
             </ScrollView>
 
             {/* Comprehensive Patient Dossier Card */}
-            <View style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardTitle}>Patient Medical Profile</Text>
-                <TouchableOpacity style={styles.exportBtnSmall} onPress={handleExportAuditPDF}>
-                  <FileDown size={13} color="#FFFFFF" />
-                  <Text style={styles.exportBtnSmallText}>Export PDF</Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.dossierName}>{selectedPatient.name}</Text>
-              <Text style={styles.dossierMeta}>
-                DOB: {selectedPatient.dob} ({selectedPatient.age}y) • {selectedPatient.gender} • Blood Type: {selectedPatient.bloodType}
-              </Text>
-              <Text style={styles.dossierBio}>
-                Height: {selectedPatient.height} • Weight: {selectedPatient.weight} • BMI: {selectedPatient.bmi}
-              </Text>
-
-              {/* Account & Login Access Authorization Banner */}
-              <View style={styles.authStatusCard}>
-                <View style={styles.authStatusHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                    {selectedPatient.approvalStatus === 'approved' ? (
-                      <CheckCircle2 size={16} color="#15803D" />
-                    ) : (
-                      <Clock size={16} color="#D97706" />
-                    )}
-                    <Text style={styles.authStatusTitle}>
-                      {selectedPatient.approvalStatus === 'approved'
-                        ? 'App Access: Authorized'
-                        : 'App Access: Pending Review'}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.authStatusBadge,
-                      selectedPatient.approvalStatus === 'approved' ? styles.badgeApproved : styles.badgePending,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.authStatusBadgeText,
-                        selectedPatient.approvalStatus === 'approved' ? styles.badgeApprovedText : styles.badgePendingText,
-                      ]}
-                    >
-                      {selectedPatient.approvalStatus.toUpperCase()}
-                    </Text>
-                  </View>
+            {selectedPatient ? (
+              <View style={styles.card}>
+                <View style={styles.cardHeaderRow}>
+                  <Text style={styles.cardTitle}>Patient Medical Profile</Text>
+                  <TouchableOpacity style={styles.exportBtnSmall} onPress={handleExportAuditPDF}>
+                    <FileDown size={13} color="#FFFFFF" />
+                    <Text style={styles.exportBtnSmallText}>Export PDF</Text>
+                  </TouchableOpacity>
                 </View>
 
-                <Text style={styles.authStatusMeta}>
-                  {selectedPatient.approvalStatus === 'approved'
-                    ? `Authorized by ${selectedPatient.approvedBy || 'Dr. Robert Henderson, M.D.'} • Direct cloud sync active`
-                    : 'Account registered. Medication orders, dosing schedules, and biometrics remain locked until approved.'}
+                <Text style={styles.dossierName}>{selectedPatient.name}</Text>
+                <Text style={styles.dossierMeta}>
+                  DOB: {selectedPatient.dob} ({selectedPatient.age}y) • {selectedPatient.gender} • Blood Type: {selectedPatient.bloodType}
+                </Text>
+                <Text style={styles.dossierBio}>
+                  Height: {selectedPatient.height} • Weight: {selectedPatient.weight} • BMI: {selectedPatient.bmi}
                 </Text>
 
-                {selectedPatient.approvalStatus === 'pending' ? (
-                  <TouchableOpacity
-                    style={styles.approveAccessBtn}
-                    onPress={() => handleUpdateApproval(selectedPatient.id, 'approved')}
-                    activeOpacity={0.8}
-                  >
-                    <CheckCircle2 size={14} color="#FFFFFF" />
-                    <Text style={styles.approveAccessBtnText}>✓ Authorize & Approve Patient Login</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.revokeAccessBtn}
-                    onPress={() => handleUpdateApproval(selectedPatient.id, 'pending')}
-                    activeOpacity={0.8}
-                  >
-                    <ShieldAlert size={13} color="#DC2626" />
-                    <Text style={styles.revokeAccessBtnText}>Suspend / Revoke Login Access</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Patient Behavior & Adherence Analysis */}
-              <View style={styles.behaviorCard}>
-                <View style={styles.behaviorCardHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                    <HeartPulse
-                      size={16}
-                      color={
-                        selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
-                          ? '#DC2626'
-                          : '#0D9488'
-                      }
-                    />
-                    <Text style={styles.behaviorCardTitle}>Patient Behavior & Adherence Watch</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.behaviorPill,
-                      selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
-                        ? styles.behaviorPillPoor
-                        : styles.behaviorPillGood,
-                    ]}
-                  >
-                    <Text
+                {/* Account & Login Access Authorization Banner */}
+                <View style={styles.authStatusCard}>
+                  <View style={styles.authStatusHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                      {selectedPatient.approvalStatus === 'approved' ? (
+                        <CheckCircle2 size={16} color="#15803D" />
+                      ) : (
+                        <Clock size={16} color="#D97706" />
+                      )}
+                      <Text style={styles.authStatusTitle}>
+                        {selectedPatient.approvalStatus === 'approved'
+                          ? 'App Access: Authorized'
+                          : 'App Access: Pending Review'}
+                      </Text>
+                    </View>
+                    <View
                       style={[
-                        styles.behaviorPillText,
-                        selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
-                          ? styles.behaviorPillTextPoor
-                          : styles.behaviorPillTextGood,
+                        styles.authStatusBadge,
+                        selectedPatient.approvalStatus === 'approved' ? styles.badgeApproved : styles.badgePending,
                       ]}
                     >
-                      {selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
-                        ? '🔴 NEEDS ATTENTION'
-                        : '🟢 GOOD BEHAVIOR'}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.authStatusBadgeText,
+                          selectedPatient.approvalStatus === 'approved' ? styles.badgeApprovedText : styles.badgePendingText,
+                        ]}
+                      >
+                        {selectedPatient.approvalStatus.toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                <View style={styles.behaviorStatsRow}>
-                  <View style={styles.behaviorStatBox}>
-                    <Text style={styles.behaviorStatNum}>{selectedPatient.adherenceRate ?? 100}%</Text>
-                    <Text style={styles.behaviorStatLabel}>Compliance</Text>
-                  </View>
-                  <View style={styles.behaviorStatBox}>
-                    <Text style={[styles.behaviorStatNum, { color: '#15803D' }]}>
-                      {selectedPatient.dosesTakenCount ?? 0}
-                    </Text>
-                    <Text style={styles.behaviorStatLabel}>Doses Taken</Text>
-                  </View>
-                  <View style={styles.behaviorStatBox}>
-                    <Text style={[styles.behaviorStatNum, { color: '#DC2626' }]}>
-                      {selectedPatient.dosesMissedCount ?? 0}
-                    </Text>
-                    <Text style={styles.behaviorStatLabel}>Doses Missed</Text>
-                  </View>
-                </View>
-
-                <View style={styles.reminderActionRow}>
-                  <Text style={styles.reminderActionSub}>
-                    {selectedPatient.lastReminderSent
-                      ? `Last dose reminder sent: ${new Date(selectedPatient.lastReminderSent).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                      : 'Keep patient on track by dispatching an instant medication dose reminder.'}
+                  <Text style={styles.authStatusMeta}>
+                    {selectedPatient.approvalStatus === 'approved'
+                      ? `Authorized by ${selectedPatient.approvedBy || 'Dr. Robert Henderson, M.D.'} • Direct cloud sync active`
+                      : 'Account registered. Medication orders, dosing schedules, and biometrics remain locked until approved.'}
                   </Text>
+
+                  {selectedPatient.approvalStatus === 'pending' ? (
+                    <TouchableOpacity
+                      style={styles.approveAccessBtn}
+                      onPress={() => handleUpdateApproval(selectedPatient.id, 'approved')}
+                      activeOpacity={0.8}
+                    >
+                      <CheckCircle2 size={14} color="#FFFFFF" />
+                      <Text style={styles.approveAccessBtnText}>✓ Authorize & Approve Patient Login</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.revokeAccessBtn}
+                      onPress={() => handleUpdateApproval(selectedPatient.id, 'pending')}
+                      activeOpacity={0.8}
+                    >
+                      <ShieldAlert size={13} color="#DC2626" />
+                      <Text style={styles.revokeAccessBtnText}>Suspend / Revoke Login Access</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Patient Behavior & Adherence Analysis */}
+                <View style={styles.behaviorCard}>
+                  <View style={styles.behaviorCardHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                      <HeartPulse
+                        size={16}
+                        color={
+                          selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                            ? '#DC2626'
+                            : '#0D9488'
+                        }
+                      />
+                      <Text style={styles.behaviorCardTitle}>Patient Behavior & Adherence Watch</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.behaviorPill,
+                        selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                          ? styles.behaviorPillPoor
+                          : styles.behaviorPillGood,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.behaviorPillText,
+                          selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                            ? styles.behaviorPillTextPoor
+                            : styles.behaviorPillTextGood,
+                        ]}
+                      >
+                        {selectedPatient.behaviorRating === 'poor' || (selectedPatient.adherenceRate ?? 100) < 70
+                          ? '🔴 NEEDS ATTENTION'
+                          : '🟢 GOOD BEHAVIOR'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.behaviorStatsRow}>
+                    <View style={styles.behaviorStatBox}>
+                      <Text style={styles.behaviorStatNum}>{selectedPatient.adherenceRate ?? 100}%</Text>
+                      <Text style={styles.behaviorStatLabel}>Compliance</Text>
+                    </View>
+                    <View style={styles.behaviorStatBox}>
+                      <Text style={[styles.behaviorStatNum, { color: '#15803D' }]}>
+                        {selectedPatient.dosesTakenCount ?? 0}
+                      </Text>
+                      <Text style={styles.behaviorStatLabel}>Doses Taken</Text>
+                    </View>
+                    <View style={styles.behaviorStatBox}>
+                      <Text style={[styles.behaviorStatNum, { color: '#DC2626' }]}>
+                        {selectedPatient.dosesMissedCount ?? 0}
+                      </Text>
+                      <Text style={styles.behaviorStatLabel}>Doses Missed</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.reminderActionRow}>
+                    <Text style={styles.reminderActionSub}>
+                      {selectedPatient.lastReminderSent
+                        ? `Last dose reminder sent: ${new Date(selectedPatient.lastReminderSent).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : 'Keep patient on track by dispatching an instant medication dose reminder.'}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.sendReminderBtn}
+                      onPress={handleOpenReminderModal}
+                      activeOpacity={0.8}
+                    >
+                      <Bell size={13} color="#FFFFFF" />
+                      <Text style={styles.sendReminderBtnText}>⏰ Send Dose Reminder</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Diagnoses */}
+                <Text style={styles.sectionSubLabel}>DIAGNOSED CONDITIONS:</Text>
+                <View style={styles.tagWrap}>
+                  {selectedPatient.conditions.map((cond, i) => (
+                    <View key={i} style={styles.condTag}>
+                      <Text style={styles.condTagText}>{cond}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Allergies */}
+                <Text style={[styles.sectionSubLabel, { color: '#B91C1C', marginTop: 10 }]}>CRITICAL DRUG ALLERGIES:</Text>
+                <View style={styles.tagWrap}>
+                  {selectedPatient.allergies.map((allg, i) => (
+                    <View key={i} style={styles.allgTag}>
+                      <ShieldAlert size={12} color="#B91C1C" />
+                      <Text style={styles.allgTagText}>{allg}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Caregiver */}
+                <View style={styles.caregiverRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.caregiverLabel}>Designated Proxy / Caregiver:</Text>
+                    <Text style={styles.caregiverName}>{selectedPatient.caregiverName}</Text>
+                    <Text style={styles.caregiverPhone}>{selectedPatient.caregiverPhone}</Text>
+                  </View>
                   <TouchableOpacity
-                    style={styles.sendReminderBtn}
-                    onPress={handleOpenReminderModal}
-                    activeOpacity={0.8}
+                    style={styles.callProxyBtn}
+                    onPress={() => Linking.openURL(`tel:${selectedPatient.caregiverPhone}`)}
                   >
-                    <Bell size={13} color="#FFFFFF" />
-                    <Text style={styles.sendReminderBtnText}>⏰ Send Dose Reminder</Text>
+                    <Phone size={13} color="#0D9488" />
+                    <Text style={styles.callProxyText}>Call Caregiver</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* Diagnoses */}
-              <Text style={styles.sectionSubLabel}>DIAGNOSED CONDITIONS:</Text>
-              <View style={styles.tagWrap}>
-                {selectedPatient.conditions.map((cond, i) => (
-                  <View key={i} style={styles.condTag}>
-                    <Text style={styles.condTagText}>{cond}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Allergies */}
-              <Text style={[styles.sectionSubLabel, { color: '#B91C1C', marginTop: 10 }]}>CRITICAL DRUG ALLERGIES:</Text>
-              <View style={styles.tagWrap}>
-                {selectedPatient.allergies.map((allg, i) => (
-                  <View key={i} style={styles.allgTag}>
-                    <ShieldAlert size={12} color="#B91C1C" />
-                    <Text style={styles.allgTagText}>{allg}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Caregiver */}
-              <View style={styles.caregiverRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.caregiverLabel}>Designated Proxy / Caregiver:</Text>
-                  <Text style={styles.caregiverName}>{selectedPatient.caregiverName}</Text>
-                  <Text style={styles.caregiverPhone}>{selectedPatient.caregiverPhone}</Text>
-                </View>
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>No Patients Enrolled</Text>
+                <Text style={styles.cardSub}>
+                  Cohort is clean. Tap '+ Enroll' above to add your first real patient, configure their starting doses, and monitor their compliance.
+                </Text>
                 <TouchableOpacity
-                  style={styles.callProxyBtn}
-                  onPress={() => Linking.openURL(`tel:${selectedPatient.caregiverPhone}`)}
+                  style={[styles.enrollPatientBtn, { marginTop: 16, alignSelf: 'flex-start' }]}
+                  onPress={() => setIsEnrollModalOpen(true)}
+                  activeOpacity={0.85}
                 >
-                  <Phone size={13} color="#0D9488" />
-                  <Text style={styles.callProxyText}>Call Caregiver</Text>
+                  <Plus size={15} color="#FFFFFF" />
+                  <Text style={styles.enrollPatientBtnText}>+ Enroll First Patient</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
         )}
 
@@ -919,54 +954,77 @@ export const DoctorDashboardScreen: React.FC = () => {
             )}
 
             {/* Prescription Regimen Card */}
-            <View style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <View>
-                  <Text style={styles.cardTitle}>Active Prescriptions ({activeMeds.filter(m => m.isActive).length})</Text>
-                  <Text style={styles.cardSub}>Authorized medications for {selectedPatient.name}</Text>
+            {selectedPatient ? (
+              <View style={styles.card}>
+                <View style={styles.cardHeaderRow}>
+                  <View>
+                    <Text style={styles.cardTitle}>Active Prescriptions ({activeMeds.filter(m => m.isActive).length})</Text>
+                    <Text style={styles.cardSub}>Authorized medications for {selectedPatient.name}</Text>
+                  </View>
+                  <TouchableOpacity style={styles.addRxBtn} onPress={() => setIsAddModalOpen(true)}>
+                    <Plus size={14} color="#FFFFFF" />
+                    <Text style={styles.addRxBtnText}>+ Prescribe</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.addRxBtn} onPress={() => setIsAddModalOpen(true)}>
-                  <Plus size={14} color="#FFFFFF" />
-                  <Text style={styles.addRxBtnText}>+ Prescribe</Text>
+
+                {activeMeds.filter(m => m.isActive).length === 0 ? (
+                  <Text style={[styles.cardSub, { paddingVertical: 14, textAlign: 'center' }]}>
+                    No medications prescribed yet. Tap '+ Prescribe' to authorize a new medication.
+                  </Text>
+                ) : (
+                  activeMeds.filter(m => m.isActive).map(med => (
+                    <View key={med.id} style={styles.medItem}>
+                      <View style={styles.medItemTop}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.medItemName}>
+                            {med.name} <Text style={styles.medItemDosage}>({med.dosage})</Text>
+                          </Text>
+                          <Text style={styles.medItemInstructions}>{med.instructions}</Text>
+                          <Text style={styles.medItemTimes}>Times: {med.times.join(' • ')} • Form: {med.form}</Text>
+                        </View>
+                        <View style={styles.stockBadge}>
+                          <Text style={styles.stockBadgeText}>{med.stockCurrent} in stock {med.stockCurrent <= 7 ? '🔴' : '🟢'}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.medItemActions}>
+                        <TouchableOpacity style={styles.adjustBtn} onPress={() => handleOpenAdjustModal(med)}>
+                          <Edit3 size={13} color="#0284C7" />
+                          <Text style={styles.adjustBtnText}>Adjust Dosage</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.discontinueBtn} onPress={() => handleDiscontinueMedication(med)}>
+                          <Trash2 size={13} color="#DC2626" />
+                          <Text style={styles.discontinueBtnText}>Discontinue</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+
+                <View style={styles.ePrescribeSignature}>
+                  <ShieldCheck size={14} color="#0D9488" />
+                  <Text style={styles.ePrescribeText}>
+                    Digitally Authorized by {user?.fullName || 'Dr. Robert Henderson, M.D.'} • E-Prescribe Certified
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>No Patient Selected</Text>
+                <Text style={styles.cardSub}>
+                  Please enroll or select a patient to view and manage their authorized prescriptions.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.enrollPatientBtn, { marginTop: 16, alignSelf: 'flex-start' }]}
+                  onPress={() => setIsEnrollModalOpen(true)}
+                  activeOpacity={0.85}
+                >
+                  <Plus size={15} color="#FFFFFF" />
+                  <Text style={styles.enrollPatientBtnText}>+ Enroll First Patient</Text>
                 </TouchableOpacity>
               </View>
-
-              {activeMeds.filter(m => m.isActive).map(med => (
-                <View key={med.id} style={styles.medItem}>
-                  <View style={styles.medItemTop}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.medItemName}>
-                        {med.name} <Text style={styles.medItemDosage}>({med.dosage})</Text>
-                      </Text>
-                      <Text style={styles.medItemInstructions}>{med.instructions}</Text>
-                      <Text style={styles.medItemTimes}>Times: {med.times.join(' • ')} • Form: {med.form}</Text>
-                    </View>
-                    <View style={styles.stockBadge}>
-                      <Text style={styles.stockBadgeText}>{med.stockCurrent} in stock {med.stockCurrent <= 7 ? '🔴' : '🟢'}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.medItemActions}>
-                    <TouchableOpacity style={styles.adjustBtn} onPress={() => handleOpenAdjustModal(med)}>
-                      <Edit3 size={13} color="#0284C7" />
-                      <Text style={styles.adjustBtnText}>Adjust Dosage</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.discontinueBtn} onPress={() => handleDiscontinueMedication(med)}>
-                      <Trash2 size={13} color="#DC2626" />
-                      <Text style={styles.discontinueBtnText}>Discontinue</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-
-              <View style={styles.ePrescribeSignature}>
-                <ShieldCheck size={14} color="#0D9488" />
-                <Text style={styles.ePrescribeText}>
-                  Digitally Authorized by {user?.fullName || 'Dr. Robert Henderson, M.D.'} • E-Prescribe Certified
-                </Text>
-              </View>
-            </View>
+            )}
           </View>
         )}
 
@@ -974,123 +1032,145 @@ export const DoctorDashboardScreen: React.FC = () => {
         {activeTab === 'vitals' && (
           <View style={styles.tabContent}>
             {/* Vitals Overview */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Real-time Biomarkers & Vitals</Text>
-              <Text style={styles.cardSub}>Continuous remote transmissions from {selectedPatient.name}</Text>
+            {selectedPatient ? (
+              <>
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Real-time Biomarkers & Vitals</Text>
+                  <Text style={styles.cardSub}>Continuous remote transmissions from {selectedPatient.name}</Text>
 
-              <View style={styles.vitalsGrid}>
-                <View style={styles.vitalCard}>
-                  <Text style={styles.vitalLabel}>Blood Pressure</Text>
-                  <Text style={styles.vitalValue}>{selectedPatient.latestBP}</Text>
-                  <Text style={styles.vitalSub}>AHA Category: Optimal</Text>
+                  <View style={styles.vitalsGrid}>
+                    <View style={styles.vitalCard}>
+                      <Text style={styles.vitalLabel}>Blood Pressure</Text>
+                      <Text style={styles.vitalValue}>{selectedPatient.latestBP || '120/80'}</Text>
+                      <Text style={styles.vitalSub}>AHA Category: Optimal</Text>
+                    </View>
+                    <View style={styles.vitalCard}>
+                      <Text style={styles.vitalLabel}>Blood Glucose</Text>
+                      <Text style={styles.vitalValue}>{selectedPatient.latestGlucose || '95 mg/dL'}</Text>
+                      <Text style={styles.vitalSub}>ADA Fasting Target</Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.vitalCard}>
-                  <Text style={styles.vitalLabel}>Blood Glucose</Text>
-                  <Text style={styles.vitalValue}>{selectedPatient.latestGlucose}</Text>
-                  <Text style={styles.vitalSub}>ADA Fasting Target</Text>
-                </View>
-              </View>
-            </View>
 
-            {/* Medicare RPM Reimbursement Compliance */}
-            <View style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardTitle}>Medicare RPM Billing Tracker</Text>
-                <View style={styles.rpmQualifyBadge}>
-                  <DollarSign size={12} color="#15803D" />
-                  <Text style={styles.rpmQualifyText}>QUALIFIED</Text>
-                </View>
-              </View>
-              <Text style={styles.cardSub}>CMS Remote Patient Monitoring Compliance for {selectedPatient.name}</Text>
+                {/* Medicare RPM Reimbursement Compliance */}
+                <View style={styles.card}>
+                  <View style={styles.cardHeaderRow}>
+                    <Text style={styles.cardTitle}>Medicare RPM Billing Tracker</Text>
+                    <View style={styles.rpmQualifyBadge}>
+                      <DollarSign size={12} color="#15803D" />
+                      <Text style={styles.rpmQualifyText}>QUALIFIED</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.cardSub}>CMS Remote Patient Monitoring Compliance for {selectedPatient.name}</Text>
 
-              <View style={styles.cptRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cptCode}>CPT 99453 — Initial RPM Setup</Text>
-                  <Text style={styles.cptDesc}>Device onboarding & patient training ($19.20)</Text>
-                </View>
-                <Text style={styles.cptStatus}>✓ Billed</Text>
-              </View>
+                  <View style={styles.cptRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cptCode}>CPT 99453 — Initial RPM Setup</Text>
+                      <Text style={styles.cptDesc}>Device onboarding & patient training ($19.20)</Text>
+                    </View>
+                    <Text style={styles.cptStatus}>✓ Billed</Text>
+                  </View>
 
-              <View style={styles.cptRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cptCode}>CPT 99454 — 16+ Days Transmissions</Text>
-                  <Text style={styles.cptDesc}>21 / 30 transmission days completed ($48.80)</Text>
-                </View>
-                <Text style={styles.cptStatusActive}>✓ Qualified</Text>
-              </View>
+                  <View style={styles.cptRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cptCode}>CPT 99454 — 16+ Days Transmissions</Text>
+                      <Text style={styles.cptDesc}>21 / 30 transmission days completed ($48.80)</Text>
+                    </View>
+                    <Text style={styles.cptStatusActive}>✓ Qualified</Text>
+                  </View>
 
-              <View style={styles.cptRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cptCode}>CPT 99457 — Clinical RPM Management</Text>
-                  <Text style={styles.cptDesc}>24 / 20 minutes clinical staff review ($51.40)</Text>
-                </View>
-                <Text style={styles.cptStatusActive}>✓ Qualified</Text>
-              </View>
+                  <View style={styles.cptRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cptCode}>CPT 99457 — Clinical RPM Management</Text>
+                      <Text style={styles.cptDesc}>24 / 20 minutes clinical staff review ($51.40)</Text>
+                    </View>
+                    <Text style={styles.cptStatusActive}>✓ Qualified</Text>
+                  </View>
 
-              <View style={styles.rpmTotalCard}>
-                <Text style={styles.rpmTotalLabel}>Est. Monthly Practice Revenue per Patient:</Text>
-                <Text style={styles.rpmTotalAmount}>$119.40 / month</Text>
+                  <View style={styles.rpmTotalCard}>
+                    <Text style={styles.rpmTotalLabel}>Est. Monthly Practice Revenue per Patient:</Text>
+                    <Text style={styles.rpmTotalAmount}>$119.40 / month</Text>
+                  </View>
+                </View>
+              </>
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>No Patient Selected</Text>
+                <Text style={styles.cardSub}>
+                  Please enroll or select a patient to track their biomarkers and RPM billing qualification.
+                </Text>
               </View>
-            </View>
+            )}
           </View>
         )}
 
         {/* TAB 4: ORDERS & DIRECTIVES */}
         {activeTab === 'orders' && (
           <View style={styles.tabContent}>
-            {/* Quick Presets */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>1-Tap Clinical Presets</Text>
-              <Text style={styles.cardSub}>Select a preset directive to populate order</Text>
+            {selectedPatient ? (
+              <>
+                {/* Quick Presets */}
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>1-Tap Clinical Presets</Text>
+                  <Text style={styles.cardSub}>Select a preset directive to populate order</Text>
 
-              {CLINICAL_PRESETS.map((preset, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.presetItem}
-                  onPress={() => setDoctorNote(preset)}
-                  activeOpacity={0.7}
-                >
-                  <Sparkles size={14} color="#0D9488" />
-                  <Text style={styles.presetText}>{preset}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                  {CLINICAL_PRESETS.map((preset, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={styles.presetItem}
+                      onPress={() => setDoctorNote(preset)}
+                      activeOpacity={0.7}
+                    >
+                      <Sparkles size={14} color="#0D9488" />
+                      <Text style={styles.presetText}>{preset}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-            {/* Custom Directive Input */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Dispatch Directive to Patient App</Text>
-              <Text style={styles.cardSub}>Pushes a high-priority clinical instruction directly to {selectedPatient.name}'s device</Text>
+                {/* Custom Directive Input */}
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Dispatch Directive to Patient App</Text>
+                  <Text style={styles.cardSub}>Pushes a high-priority clinical instruction directly to {selectedPatient.name}'s device</Text>
 
-              <TextInput
-                style={styles.orderInput}
-                placeholder="Enter customized physician directive or regimen adjustment..."
-                placeholderTextColor="#94A3B8"
-                multiline
-                value={doctorNote}
-                onChangeText={setDoctorNote}
-              />
+                  <TextInput
+                    style={styles.orderInput}
+                    placeholder="Enter customized physician directive or regimen adjustment..."
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    value={doctorNote}
+                    onChangeText={setDoctorNote}
+                  />
 
-              <TouchableOpacity style={styles.dispatchBtn} onPress={handleSendMessage}>
-                <Send size={15} color="#FFFFFF" />
-                <Text style={styles.dispatchBtnText}>Dispatch Clinical Order</Text>
-              </TouchableOpacity>
-            </View>
+                  <TouchableOpacity style={styles.dispatchBtn} onPress={handleSendMessage}>
+                    <Send size={15} color="#FFFFFF" />
+                    <Text style={styles.dispatchBtnText}>Dispatch Clinical Order</Text>
+                  </TouchableOpacity>
+                </View>
 
-            {/* Clinical Dossier PDF Export */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Complete Medical Dossier PDF</Text>
-              <Text style={styles.cardSub}>Generate an audit-grade clinical dossier including all medications, vitals, and logs</Text>
-              <TouchableOpacity style={styles.exportFullBtn} onPress={handleExportAuditPDF} disabled={isExporting}>
-                {isExporting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <FileDown size={16} color="#FFFFFF" />
-                    <Text style={styles.exportFullBtnText}>Export & Share Patient Dossier</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+                {/* Clinical Dossier PDF Export */}
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Complete Medical Dossier PDF</Text>
+                  <Text style={styles.cardSub}>Generate an audit-grade clinical dossier including all medications, vitals, and logs</Text>
+                  <TouchableOpacity style={styles.exportFullBtn} onPress={handleExportAuditPDF} disabled={isExporting}>
+                    {isExporting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <FileDown size={16} color="#FFFFFF" />
+                        <Text style={styles.exportFullBtnText}>Export & Share Patient Dossier</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>No Patient Selected</Text>
+                <Text style={styles.cardSub}>
+                  Please enroll or select a patient to dispatch clinical directives or export audit dossiers.
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -1143,7 +1223,7 @@ export const DoctorDashboardScreen: React.FC = () => {
             <View style={styles.modalTop}>
               <View>
                 <Text style={styles.modalTitle}>Issue New Prescription</Text>
-                <Text style={styles.modalSub}>Patient: {selectedPatient.name}</Text>
+                <Text style={styles.modalSub}>Patient: {selectedPatient?.name || 'Selected Patient'}</Text>
               </View>
               <TouchableOpacity onPress={() => setIsAddModalOpen(false)}>
                 <X size={20} color="#64748B" />
@@ -1191,7 +1271,7 @@ export const DoctorDashboardScreen: React.FC = () => {
             <View style={styles.modalTop}>
               <View>
                 <Text style={styles.modalTitle}>Adjust Dosage</Text>
-                <Text style={styles.modalSub}>{selectedMedForAdjust?.name} for {selectedPatient.name}</Text>
+                <Text style={styles.modalSub}>{selectedMedForAdjust?.name} for {selectedPatient?.name || 'Selected Patient'}</Text>
               </View>
               <TouchableOpacity onPress={() => setIsAdjustModalOpen(false)}>
                 <X size={20} color="#64748B" />

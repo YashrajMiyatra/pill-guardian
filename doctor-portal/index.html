@@ -330,20 +330,20 @@
           <div class="card">
             <div class="card-title">Patient Medical Profile</div>
             <div style="margin-bottom:12px;">
-              <div style="font-size:17px; font-weight:800;" id="profName">Arthur Bennett</div>
+              <div style="font-size:17px; font-weight:800;" id="profName">No Patients Enrolled</div>
               <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profMeta">
-                DOB: 1958-03-14 (Age 68) • Gender: Male • Blood Type: <strong>O+</strong>
+                Cohort is clear. Tap "+ Enroll" to onboard real patients and specify their medication doses.
               </div>
-              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profBio">
-                Height: 178 cm (5'10") • Weight: 84 kg (185 lbs)
-              </div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profBio"></div>
             </div>
 
             <!-- Login Access & Authorization Widget -->
-            <div id="profApprovalCard" style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px;"></div>
+            <div id="profApprovalCard" style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px;">
+              <div style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Clean slate ready for new clinical enrollments.</div>
+            </div>
 
             <!-- Patient Behavior & Adherence Analysis -->
-            <div id="profBehaviorCard" style="background:#f0fdfa; border:1px solid #ccfbf1; border-radius:10px; padding:12px; margin-bottom:12px;">
+            <div id="profBehaviorCard" style="background:#f0fdfa; border:1px solid #ccfbf1; border-radius:10px; padding:12px; margin-bottom:12px; display:none;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <strong style="font-size:12px; color:#0f172a; display:flex; align-items:center; gap:6px;">
                   💓 Behavior & Adherence Watch
@@ -352,15 +352,15 @@
               </div>
               <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
                 <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
-                  <div style="font-size:14px; font-weight:800;" id="profStatAdherence">85%</div>
+                  <div style="font-size:14px; font-weight:800;" id="profStatAdherence">100%</div>
                   <div style="font-size:9px; color:var(--muted); font-weight:700;">COMPLIANCE</div>
                 </div>
                 <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
-                  <div style="font-size:14px; font-weight:800; color:#15803d;" id="profStatTaken">18</div>
+                  <div style="font-size:14px; font-weight:800; color:#15803d;" id="profStatTaken">0</div>
                   <div style="font-size:9px; color:var(--muted); font-weight:700;">DOSES TAKEN</div>
                 </div>
                 <div style="background:white; border:1px solid #e2e8f0; border-radius:6px; padding:6px; text-align:center;">
-                  <div style="font-size:14px; font-weight:800; color:#dc2626;" id="profStatMissed">1</div>
+                  <div style="font-size:14px; font-weight:800; color:#dc2626;" id="profStatMissed">0</div>
                   <div style="font-size:9px; color:var(--muted); font-weight:700;">MISSED</div>
                 </div>
               </div>
@@ -545,7 +545,7 @@
   <div class="modal-backdrop" id="addPrescriptionModal">
     <div class="modal">
       <div class="modal-title">Authorize New Prescription</div>
-      <div class="modal-sub" id="addModalPatientSub">Patient: Arthur Bennett</div>
+      <div class="modal-sub" id="addModalPatientSub">Authorize medication for patient</div>
 
       <div class="form-group">
         <label class="form-label">Medication Name *</label>
@@ -593,7 +593,7 @@
   <div class="modal-backdrop" id="adjustDosageModal">
     <div class="modal">
       <div class="modal-title">Modify Prescription Dosage</div>
-      <div class="modal-sub" id="adjustModalSub">Adjusting dosage for Arthur Bennett</div>
+      <div class="modal-sub" id="adjustModalSub">Adjusting medication dosage</div>
 
       <div class="form-group">
         <label class="form-label">New Dosage / Strength *</label>
@@ -746,18 +746,13 @@
       }
     ];
 
-    // Initialize or load from LocalStorage
+    // Clean Slate by Default: Load real clinician roster from LocalStorage, default to empty array
     let patients = [];
     try {
-      const isFresh = localStorage.getItem('pill_guardian_fresh_reset');
       const stored = localStorage.getItem('pill_guardian_web_patients_v2');
-      if (isFresh === 'true') {
-        patients = stored ? JSON.parse(stored) : [];
-      } else {
-        patients = stored ? JSON.parse(stored) : INITIAL_PATIENTS;
-      }
+      patients = stored ? JSON.parse(stored) : [];
     } catch {
-      patients = INITIAL_PATIENTS;
+      patients = [];
     }
 
     let currentPatientIndex = 0;
