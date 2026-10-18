@@ -147,74 +147,310 @@
     .toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white; padding: 12px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; z-index: 200; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); }
 
     /* Physician Auth Login Screen */
+    /* Physician Auth Login Screen */
     .auth-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(135deg, #091e3a 0%, #0c334d 50%, #0d9488 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .auth-card { background: white; border-radius: 20px; width: 440px; max-width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); padding: 36px 32px; border: 1px solid rgba(255,255,255,0.2); }
-    .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-    .auth-brand-icon { width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #0284c7, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px; box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.4); }
-    .auth-title { font-size: 20px; font-weight: 800; color: #0f172a; }
-    .auth-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
-    .google-login-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 16px; border-radius: 10px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #1e293b; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 20px; }
-    .google-login-btn:hover { background: #f8fafc; border-color: #94a3b8; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .auth-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
-    .auth-input-group { margin-bottom: 14px; }
-    .auth-label { display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .auth-input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; transition: border-color 0.2s; background: #f8fafc; }
-    .auth-input:focus { border-color: #0d9488; background: #ffffff; }
-    .auth-submit-btn { width: 100%; padding: 12px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #0d9488); color: white; font-size: 14px; font-weight: 800; border: none; cursor: pointer; transition: transform 0.15s, box-shadow 0.2s; margin-top: 10px; box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3); }
-    .auth-submit-btn:hover { opacity: 0.95; transform: translateY(-1px); }
-    .auth-quick-preset { font-size: 11px; color: #64748b; margin-top: 16px; text-align: center; }
-    .auth-quick-link { color: #0284c7; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+    /* Google Sign-in Modal Styling */
+    .google-login-modal {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 480px;
+      max-width: 95%;
+      padding: 34px 30px 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      text-align: left;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .google-header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .google-logo-svg {
+      width: 44px;
+      height: 44px;
+      margin-bottom: 10px;
+    }
+    .google-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #202124;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .google-sub {
+      font-size: 13px;
+      color: #5f6368;
+      margin-top: 4px;
+    }
+    .google-account-chooser {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .google-account-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border: 1px solid #dadce0;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .google-account-item:hover {
+      background: #f8fafd;
+      border-color: #1a73e8;
+      transform: translateY(-1px);
+    }
+    .google-acc-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .google-acc-info {
+      flex: 1;
+      text-align: left;
+      overflow: hidden;
+    }
+    .google-acc-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #202124;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .google-acc-email {
+      font-size: 11px;
+      color: #5f6368;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .google-acc-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #e8f0fe;
+      color: #1a73e8;
+      flex-shrink: 0;
+    }
+    .google-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0;
+      color: #70757a;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .google-divider::before, .google-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #dadce0;
+    }
+    .google-input-group {
+      margin-bottom: 12px;
+    }
+    .google-input-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      letter-spacing: 0.4px;
+    }
+    .google-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #dadce0;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #202124;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    .google-input:focus {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+    }
+    .google-form-row {
+      display: flex;
+      gap: 10px;
+    }
+    .google-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+    }
+    .google-secondary-link {
+      font-size: 12px;
+      color: #1a73e8;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .google-secondary-link:hover {
+      text-decoration: underline;
+    }
+    .google-btn-primary {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+    .google-btn-primary:hover {
+      background: #1557b0;
+      box-shadow: 0 2px 6px rgba(26, 115, 232, 0.35);
+      transform: translateY(-1px);
+    }
+    .google-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f3f4;
+      font-size: 11px;
+      color: #70757a;
+    }
+    .google-footer-links {
+      display: flex;
+      gap: 12px;
+    }
     .doc-signout-btn { background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
     .doc-signout-btn:hover { background: #fca5a5; color: #7f1d1d; }
   </style>
 </head>
 <body>
 
-  <!-- Physician Login Overlay (Google SSO & Direct Medical Credential Login) -->
+  <!-- Dedicated Google Clinician Sign-In Modal -->
   <div class="auth-overlay" id="doctorLoginOverlay">
-    <div class="auth-card">
-      <div class="auth-brand">
-        <div class="auth-brand-icon">⚕️</div>
-        <div>
-          <div class="auth-title">PillGuardian™ MD</div>
-          <div class="auth-sub">Clinical RPM & Physician Workstation</div>
+    <div class="google-login-modal">
+      <!-- Google Brand Top -->
+      <div class="google-header">
+        <svg class="google-logo-svg" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.79l7.97-6.2z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        <div class="google-title">Sign in with Google</div>
+        <div class="google-sub">to access <strong>PillGuardian™ MD</strong> Clinical Workstation</div>
+      </div>
+
+      <!-- Quick 1-Tap Clinician Account Selector -->
+      <div style="font-size:11px; font-weight:700; color:#5f6368; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.4px;">
+        Choose a clinician account:
+      </div>
+      <div class="google-account-chooser">
+        <div class="google-account-item" onclick="selectGoogleAccount('dr.robert.henderson@gmail.com', 'Dr. Robert Henderson, M.D.', 'Cardiology & Chronic RPM')">
+          <div class="google-acc-avatar" style="background:#0284c7;">RH</div>
+          <div class="google-acc-info">
+            <div class="google-acc-name">Dr. Robert Henderson, M.D.</div>
+            <div class="google-acc-email">dr.robert.henderson@gmail.com</div>
+          </div>
+          <div class="google-acc-badge">1-Tap Sign In</div>
+        </div>
+
+        <div class="google-account-item" onclick="selectGoogleAccount('dr.anita.patel@gmail.com', 'Dr. Anita Patel, M.D.', 'Internal Medicine & Endocrinology')">
+          <div class="google-acc-avatar" style="background:#0d9488;">AP</div>
+          <div class="google-acc-info">
+            <div class="google-acc-name">Dr. Anita Patel, M.D.</div>
+            <div class="google-acc-email">dr.anita.patel@gmail.com</div>
+          </div>
+          <div class="google-acc-badge">1-Tap Sign In</div>
         </div>
       </div>
 
-      <button class="google-login-btn" type="button" onclick="handleGoogleDoctorLogin()">
-        <svg width="18" height="18" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-        </svg>
-        <span>Sign in with Google Clinician SSO</span>
-      </button>
+      <div class="google-divider"><span>or sign in with your Google account</span></div>
 
-      <div class="auth-divider">or sign in with clinical ID</div>
-
-      <form onsubmit="handleEmailDoctorLogin(event)">
-        <div class="auth-input-group">
-          <label class="auth-label">Physician Email / Medical ID</label>
-          <input type="email" class="auth-input" id="loginDocEmail" placeholder="dr.henderson@hospital.org" value="dr.robert.henderson@metropolitan.org" required />
+      <!-- Dedicated Google Login Form -->
+      <form id="googleLoginForm" onsubmit="submitGoogleLoginForm(event)">
+        <div class="google-input-group">
+          <label class="google-input-label">Google Email</label>
+          <input type="email" class="google-input" id="gEmail" placeholder="yourname@gmail.com or clinical domain" value="dr.robert.henderson@gmail.com" required />
         </div>
 
-        <div class="auth-input-group">
-          <label class="auth-label">Password / Security Token</label>
-          <input type="password" class="auth-input" id="loginDocPassword" placeholder="••••••••••••" value="ClinicalAccess2026!" required />
+        <div class="google-input-group">
+          <label class="google-input-label">Google Account Password</label>
+          <input type="password" class="google-input" id="gPassword" placeholder="••••••••••••" value="ClinicianGoogleAuth2026!" required />
         </div>
 
-        <div class="auth-input-group">
-          <label class="auth-label">National Provider Identifier (NPI #)</label>
-          <input type="text" class="auth-input" id="loginDocNPI" placeholder="NPI # (10 digits)" value="1982736410" />
+        <div class="google-form-row">
+          <div class="google-input-group" style="flex:1;">
+            <label class="google-input-label">Physician Name</label>
+            <input type="text" class="google-input" id="gDocName" placeholder="Dr. Jane Doe, M.D." value="Dr. Robert Henderson, M.D." />
+          </div>
+          <div class="google-input-group" style="flex:1;">
+            <label class="google-input-label">Specialty / Clinic</label>
+            <input type="text" class="google-input" id="gSpecialty" placeholder="e.g. Cardiology RPM" value="Cardiology & RPM" />
+          </div>
         </div>
 
-        <button type="submit" class="auth-submit-btn">🔐 Authorize Clinical Workstation</button>
+        <div class="google-actions">
+          <a href="javascript:void(0)" onclick="toggleHospitalNpiForm()" class="google-secondary-link" id="npiToggleLink">Hospital NPI Login</a>
+          <button type="submit" class="google-btn-primary">Sign in with Google</button>
+        </div>
       </form>
 
-      <div class="auth-quick-preset">
-        HIPAA & SOC-2 Verified • <span class="auth-quick-link" onclick="fillTestDoctor('henderson')">Dr. Henderson (Cardiology)</span> • <span class="auth-quick-link" onclick="fillTestDoctor('patel')">Dr. Patel (Internal Med)</span>
+      <!-- Collapsible Hospital NPI Form -->
+      <div id="hospitalNpiFormSection" style="display:none; margin-top:16px; border-top:1px solid #e2e8f0; padding-top:14px;">
+        <form onsubmit="handleEmailDoctorLogin(event)">
+          <div class="google-input-group">
+            <label class="google-input-label">Hospital Email</label>
+            <input type="email" class="google-input" id="loginDocEmail" placeholder="doctor@hospital.org" value="dr.robert.henderson@metropolitan.org" />
+          </div>
+          <div class="google-form-row">
+            <div class="google-input-group" style="flex:1;">
+              <label class="google-input-label">Password</label>
+              <input type="password" class="google-input" id="loginDocPassword" placeholder="••••••••" value="HospitalPass2026!" />
+            </div>
+            <div class="google-input-group" style="flex:1;">
+              <label class="google-input-label">National Provider Identifier (NPI)</label>
+              <input type="text" class="google-input" id="loginDocNPI" placeholder="10-digit NPI" value="1982736410" />
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+            <a href="javascript:void(0)" onclick="toggleHospitalNpiForm()" class="google-secondary-link">← Back to Google Sign In</a>
+            <button type="submit" class="google-btn-primary" style="background:#0f172a;">Authorize via NPI</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Google Footer -->
+      <div class="google-footer">
+        <span>English (United States)</span>
+        <div class="google-footer-links">
+          <span>Help</span>
+          <span>Privacy</span>
+          <span>Terms</span>
+        </div>
       </div>
     </div>
   </div>
@@ -234,9 +470,8 @@
     <div class="patient-search">
       <input type="text" class="search-input" id="searchPatient" placeholder="🔍 Search patient, email, condition..." onkeyup="filterPatients()" />
       <div style="display:flex; gap:6px;">
-        <button class="btn btn-primary btn-sm" style="flex:1; justify-content:center;" onclick="openEnrollPatientModal()">+ Enroll</button>
-        <button class="btn btn-danger btn-sm" style="justify-content:center;" onclick="resetToCleanSlate()" title="Wipe sample dummy data">🗑️ Reset</button>
-        <button class="btn btn-outline btn-sm" style="justify-content:center;" onclick="restoreSampleData()" title="Restore demo cohort">🔄 Demo</button>
+        <button class="btn btn-primary btn-sm" style="flex:1; justify-content:center;" onclick="openEnrollPatientModal()">+ Enroll Patient</button>
+        <button class="btn btn-danger btn-sm" style="justify-content:center;" onclick="resetToCleanSlate()" title="Wipe all data and restart clean">🗑️ Reset</button>
       </div>
     </div>
 
@@ -254,17 +489,17 @@
   <main class="main">
     <header class="topbar">
       <div class="doc-info">
-        <div class="doc-avatar" id="docAvatar">RH</div>
+        <div class="doc-avatar" id="docAvatar">MD</div>
         <div>
-          <div class="doc-name" id="docHeaderName">Dr. Robert Henderson, M.D.</div>
-          <div class="doc-dept" id="docHeaderDept">Attending Cardiologist • Metropolitan General Hospital RPM</div>
+          <div class="doc-name" id="docHeaderName">Clinical Doctor Portal</div>
+          <div class="doc-dept" id="docHeaderDept">Awaiting Physician Sign-In</div>
         </div>
       </div>
 
       <div class="topbar-actions">
         <div class="google-sso-badge" id="ssoBadge">
           <div class="google-g-icon">G</div>
-          <span id="ssoBadgeText">Google Clinician SSO Active</span>
+          <span id="ssoBadgeText">Google Clinician SSO</span>
         </div>
         <button class="btn btn-primary" onclick="openEnrollPatientModal()">+ Enroll Patient</button>
         <button class="btn btn-outline" onclick="window.print()">🖨️ Print Chart</button>
@@ -283,26 +518,26 @@
       <div class="kpi-row">
         <div class="kpi-card">
           <div class="kpi-title">Enrolled Patients</div>
-          <div class="kpi-value" id="kpiPatients">4</div>
+          <div class="kpi-value" id="kpiPatients">0</div>
           <div class="kpi-sub">Remote Monitoring Enrolled</div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-title">Pending Approvals</div>
-          <div class="kpi-value" style="color:#b45309;" id="kpiPendingCount">1</div>
+          <div class="kpi-value" style="color:#b45309;" id="kpiPendingCount">0</div>
           <div class="kpi-sub" style="color:#b45309;">Requires Physician Review</div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-title">Current Patient Adherence</div>
-          <div class="kpi-value" style="color:#15803d;" id="kpiAdherence">85%</div>
-          <div class="kpi-sub" id="kpiStreak">14-Day Consecutive Streak</div>
+          <div class="kpi-value" style="color:#15803d;" id="kpiAdherence">—</div>
+          <div class="kpi-sub" id="kpiStreak">No Patients Enrolled</div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-title">Active Regimen Count</div>
-          <div class="kpi-value" style="color:#0284c7;" id="kpiMedCount">4 Meds</div>
-          <div class="kpi-sub" id="kpiMedSub">All Authorized by Dr. Henderson</div>
+          <div class="kpi-value" style="color:#0284c7;" id="kpiMedCount">0 Meds</div>
+          <div class="kpi-sub" id="kpiMedSub">No Active Prescriptions</div>
         </div>
       </div>
 
@@ -311,10 +546,10 @@
         <!-- Left: Prescriptions & Vitals -->
         <div style="display:flex; flex-direction:column; gap:18px;">
           <!-- Clinical Drug Interaction Warning -->
-          <div class="alert-box" id="interactionAlertBox">
-            <div class="alert-box-title">⚠️ Clinical Drug Interaction Detected: Lisinopril ↔ OTC Ibuprofen / NSAIDs</div>
-            <div class="alert-box-desc">Concomitant use of ACE inhibitors and NSAIDs blunts antihypertensive efficacy and increases acute renal impairment risk.</div>
-            <div class="alert-box-rec">Clinical Directive: Advise acetaminophen (Tylenol) as preferred analgesia and monitor serum creatinine.</div>
+          <div class="alert-box" id="interactionAlertBox" style="display:none;">
+            <div class="alert-box-title" id="alertTitle">⚠️ Clinical Drug Interaction Detected</div>
+            <div class="alert-box-desc" id="alertDesc"></div>
+            <div class="alert-box-rec" id="alertRec"></div>
           </div>
 
           <!-- Active Prescriptions with CRUD -->
@@ -322,7 +557,7 @@
             <div class="card-title">
               <div>
                 <span>Prescription Regimen</span>
-                <span style="font-size:12px; color:var(--muted); font-weight:600; margin-left:6px;" id="activePrescriptionCount">(4 Active)</span>
+                <span style="font-size:12px; color:var(--muted); font-weight:600; margin-left:6px;" id="activePrescriptionCount">(0 Active)</span>
               </div>
               <button class="btn btn-primary" onclick="openAddPrescriptionModal()">+ Prescribe New Medication</button>
             </div>
@@ -346,23 +581,23 @@
             <div class="vitals-grid">
               <div class="vital-stat">
                 <div class="vital-stat-title">Blood Pressure (Morning Resting)</div>
-                <div class="vital-stat-value" id="valBP">122 / 78 mmHg</div>
-                <div class="vital-stat-target" id="valBPCat">AHA Category: Normal Optimal</div>
+                <div class="vital-stat-value" id="valBP">—</div>
+                <div class="vital-stat-target" id="valBPCat">Awaiting patient vitals sync</div>
               </div>
               <div class="vital-stat">
                 <div class="vital-stat-title">Fasting Blood Glucose</div>
-                <div class="vital-stat-value" id="valGlucose">104 mg/dL</div>
+                <div class="vital-stat-value" id="valGlucose">—</div>
                 <div class="vital-stat-target">ADA Target Range: 80 - 130 mg/dL</div>
               </div>
               <div class="vital-stat">
                 <div class="vital-stat-title">Resting Pulse</div>
-                <div class="vital-stat-value" id="valPulse">72 BPM</div>
+                <div class="vital-stat-value" id="valPulse">—</div>
                 <div class="vital-stat-target">Normal Sinus Rhythm</div>
               </div>
               <div class="vital-stat">
                 <div class="vital-stat-title">Body Weight & BMI</div>
-                <div class="vital-stat-value" id="valWeight">84 kg</div>
-                <div class="vital-stat-target" id="valBMI">BMI: 26.5 (Overweight Class I)</div>
+                <div class="vital-stat-value" id="valWeight">—</div>
+                <div class="vital-stat-target" id="valBMI">—</div>
               </div>
             </div>
           </div>
@@ -371,7 +606,7 @@
           <div class="card">
             <div class="card-title">
               <span>Medicare RPM Reimbursement Compliance (CMS)</span>
-              <span class="badge badge-stable" style="font-size:11px;">✓ QUALIFIED FOR BILLING</span>
+              <span class="badge" id="rpmStatusBadge" style="background:#f1f5f9; color:var(--muted); font-size:11px;">PENDING ENROLLMENT</span>
             </div>
             <div style="font-size:12px; color:var(--muted); margin-bottom:12px;">
               30-day monitoring period compliance metrics for RPM billing codes.
@@ -379,20 +614,20 @@
             <div style="display:flex; flex-direction:column; gap:8px;">
               <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
                 <div><strong>CPT 99453</strong> — Initial device setup & patient onboarding ($19.20)</div>
-                <strong style="color:var(--success);">✓ Billed</strong>
+                <strong id="rpmCpt99453" style="color:var(--muted);">Awaiting Enrollment</strong>
               </div>
               <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
                 <div><strong>CPT 99454</strong> — 16+ transmission days per month ($48.80)</div>
-                <strong style="color:var(--success);">21 / 30 Days Logged (✓ Qualified)</strong>
+                <strong id="rpmCpt99454" style="color:var(--muted);">0 / 30 Days Logged</strong>
               </div>
               <div style="display:flex; justify-content:space-between; padding:8px 12px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
                 <div><strong>CPT 99457</strong> — 20 minutes clinical staff RPM review ($51.40)</div>
-                <strong style="color:var(--success);">24 / 20 Mins Logged (✓ Qualified)</strong>
+                <strong id="rpmCpt99457" style="color:var(--muted);">0 / 20 Mins Logged</strong>
               </div>
             </div>
-            <div style="margin-top:12px; padding:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:12px; font-weight:700; color:#166534;">Est. Monthly Practice Revenue per Enrolled Patient:</span>
-              <span style="font-size:15px; font-weight:800; color:#15803d;">$119.40 / patient / mo</span>
+            <div style="margin-top:12px; padding:12px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; font-weight:700; color:var(--muted);">Est. Monthly Practice Revenue per Enrolled Patient:</span>
+              <span id="rpmRevenue" style="font-size:15px; font-weight:800; color:var(--muted);">$0.00 / patient / mo</span>
             </div>
           </div>
         </div>
@@ -454,8 +689,8 @@
 
             <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
               <div style="font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase;">Primary Proxy / Caregiver:</div>
-              <div style="font-size:12px; font-weight:700; margin-top:2px;" id="profCaregiverName">Sarah Bennett (Daughter)</div>
-              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profCaregiverPhone">📞 +1 (555) 902-1144</div>
+              <div style="font-size:12px; font-weight:700; margin-top:2px;" id="profCaregiverName">No caregiver assigned</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;" id="profCaregiverPhone">—</div>
             </div>
           </div>
 
@@ -495,12 +730,12 @@
 
       <div class="form-group">
         <label class="form-label">Patient Full Legal Name *</label>
-        <input type="text" class="form-control" id="enrollName" placeholder="e.g. Chloe Chen, Robert Bennett" />
+        <input type="text" class="form-control" id="enrollName" placeholder="e.g. Patient Full Legal Name" />
       </div>
 
       <div class="form-group">
         <label class="form-label">Account Email Address * (Used for Patient App Login)</label>
-        <input type="email" class="form-control" id="enrollEmail" placeholder="e.g. chloe.chen@example.com" />
+        <input type="email" class="form-control" id="enrollEmail" placeholder="e.g. patient@example.com" />
       </div>
 
       <div class="form-row">
@@ -510,7 +745,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Date of Birth (YYYY-MM-DD)</label>
-          <input type="text" class="form-control" id="enrollDOB" value="1982-04-18" />
+          <input type="text" class="form-control" id="enrollDOB" placeholder="YYYY-MM-DD" />
         </div>
       </div>
 
@@ -539,32 +774,32 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Height</label>
-          <input type="text" class="form-control" id="enrollHeight" value="168 cm (5'6&quot;)" />
+          <input type="text" class="form-control" id="enrollHeight" placeholder="e.g. 175 cm" />
         </div>
         <div class="form-group">
           <label class="form-label">Weight</label>
-          <input type="text" class="form-control" id="enrollWeight" value="68 kg (150 lbs)" />
+          <input type="text" class="form-control" id="enrollWeight" placeholder="e.g. 70 kg" />
         </div>
       </div>
 
       <div class="form-group">
         <label class="form-label">Diagnosed Chronic Conditions (Comma-separated)</label>
-        <input type="text" class="form-control" id="enrollConditions" value="Hypertension, Mild Asthma" />
+        <input type="text" class="form-control" id="enrollConditions" placeholder="e.g. Essential Hypertension, Type 2 Diabetes" />
       </div>
 
       <div class="form-group">
         <label class="form-label">Critical Drug Allergies (Comma-separated)</label>
-        <input type="text" class="form-control" id="enrollAllergies" value="Penicillin (Anaphylaxis)" />
+        <input type="text" class="form-control" id="enrollAllergies" placeholder="e.g. Penicillin (Anaphylaxis), Sulfa, None" />
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Designated Caregiver Name</label>
-          <input type="text" class="form-control" id="enrollCaregiverName" placeholder="e.g. Kevin Chen (Spouse)" />
+          <input type="text" class="form-control" id="enrollCaregiverName" placeholder="e.g. Family Caregiver Name" />
         </div>
         <div class="form-group">
           <label class="form-label">Caregiver Phone</label>
-          <input type="text" class="form-control" id="enrollCaregiverPhone" placeholder="+1 (555) 234-8890" />
+          <input type="text" class="form-control" id="enrollCaregiverPhone" placeholder="+1 (555) 000-0000" />
         </div>
       </div>
 
@@ -695,135 +930,25 @@
     const SUPABASE_KEY = 'sb_publishable__n3FPbYiUWxole02NiAK7Q_K33tEb-Z';
     const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-    const INITIAL_PATIENTS = [
-      {
-        id: "pat-1",
-        name: "Arthur Bennett",
-        email: "arthur.bennett@example.com",
-        dob: "1958-03-14",
-        age: 68,
-        gender: "Male",
-        bloodType: "O+",
-        weight: "84 kg (185 lbs)",
-        height: "178 cm (5'10\")",
-        bmi: "BMI 26.5 (Overweight I)",
-        conditions: ["Type 2 Diabetes", "Essential Hypertension", "Mild Persistent Asthma"],
-        allergies: ["Penicillin (Severe Anaphylaxis)", "Sulfa Drugs (Rash)"],
-        riskLevel: "medium",
-        approvalStatus: "approved",
-        approvedBy: "Dr. Robert Henderson, M.D.",
-        registeredAt: "2026-10-01T10:00:00Z",
-        adherence: "85%",
-        streak: "14-Day Consecutive Streak",
-        bp: "122 / 78 mmHg",
-        bpCat: "AHA Category: Normal Optimal",
-        glucose: "104 mg/dL",
-        pulse: "72 BPM",
-        caregiverName: "Sarah Bennett (Daughter)",
-        caregiverPhone: "+1 (555) 902-1144",
-        medications: [
-          { id: "m-1", name: "Metformin HCl", dosage: "500mg", form: "Tablet", times: "08:00, 19:00", stock: 42, instructions: "Take with breakfast and dinner" },
-          { id: "m-2", name: "Lisinopril", dosage: "10mg", form: "Tablet", times: "08:00", stock: 4, instructions: "Take in the morning with water" },
-          { id: "m-3", name: "Atorvastatin", dosage: "20mg", form: "Capsule", times: "21:30", stock: 28, instructions: "Take at bedtime" },
-          { id: "m-4", name: "Albuterol Inhaler", dosage: "90mcg", form: "Inhaler", times: "As needed", stock: 140, instructions: "Inhale 2 puffs for wheezing" }
-        ]
-      },
-      {
-        id: "pat-2",
-        name: "Eleanor Vance",
-        email: "eleanor.vance@example.com",
-        dob: "1954-08-22",
-        age: 72,
-        gender: "Female",
-        bloodType: "A-",
-        weight: "62 kg (136 lbs)",
-        height: "162 cm (5'4\")",
-        bmi: "BMI 23.6 (Normal)",
-        conditions: ["Congestive Heart Failure", "Atrial Fibrillation", "CKD Stage 2"],
-        allergies: ["Aspirin (GI Bleeding)", "ACE Inhibitors (Severe Cough)"],
-        riskLevel: "high",
-        approvalStatus: "approved",
-        approvedBy: "Dr. Robert Henderson, M.D.",
-        registeredAt: "2026-10-05T11:20:00Z",
-        adherence: "64%",
-        streak: "Missed Yesterday Evening",
-        bp: "148 / 92 mmHg",
-        bpCat: "AHA Category: Stage 2 Hypertension Alert",
-        glucose: "138 mg/dL",
-        pulse: "88 BPM (Irregular)",
-        caregiverName: "David Vance (Son)",
-        caregiverPhone: "+1 (555) 883-4412",
-        medications: [
-          { id: "m-201", name: "Furosemide (Lasix)", dosage: "40mg", form: "Tablet", times: "08:00", stock: 18, instructions: "Take in morning to prevent nighttime urination" },
-          { id: "m-202", name: "Carvedilol", dosage: "12.5mg", form: "Tablet", times: "08:00, 20:00", stock: 22, instructions: "Take with meals" },
-          { id: "m-203", name: "Apixaban (Eliquis)", dosage: "5mg", form: "Tablet", times: "09:00, 21:00", stock: 14, instructions: "Do not skip doses. Anticoagulant." }
-        ]
-      },
-      {
-        id: "pat-3",
-        name: "Marcus Davis",
-        email: "marcus.davis@example.com",
-        dob: "1967-11-05",
-        age: 59,
-        gender: "Male",
-        bloodType: "B+",
-        weight: "91 kg (200 lbs)",
-        height: "183 cm (6'0\")",
-        bmi: "BMI 27.2 (Overweight I)",
-        conditions: ["Hypertension", "Hyperlipidemia", "Pre-diabetes"],
-        allergies: ["No Known Drug Allergies (NKDA)"],
-        riskLevel: "stable",
-        approvalStatus: "approved",
-        approvedBy: "Dr. Robert Henderson, M.D.",
-        registeredAt: "2026-10-10T15:45:00Z",
-        adherence: "96%",
-        streak: "28-Day Perfect Streak",
-        bp: "118 / 74 mmHg",
-        bpCat: "AHA Category: Normal Optimal",
-        glucose: "98 mg/dL",
-        pulse: "68 BPM",
-        caregiverName: "Elena Davis (Spouse)",
-        caregiverPhone: "+1 (555) 774-3321",
-        medications: [
-          { id: "m-301", name: "Losartan Potassium", dosage: "50mg", form: "Tablet", times: "08:00", stock: 55, instructions: "Take once daily in morning" },
-          { id: "m-302", name: "Rosuvastatin", dosage: "10mg", form: "Tablet", times: "21:00", stock: 40, instructions: "Take in the evening" }
-        ]
-      },
-      {
-        id: "pat-4",
-        name: "Chloe Chen",
-        email: "chloe.chen@example.com",
-        dob: "1981-04-18",
-        age: 45,
-        gender: "Female",
-        bloodType: "AB+",
-        weight: "68 kg (150 lbs)",
-        height: "165 cm (5'5\")",
-        bmi: "BMI 25.0 (Normal)",
-        conditions: ["Gestational Diabetes Hx", "Mild Hypertension"],
-        allergies: ["Latex", "Ciprofloxacin"],
-        riskLevel: "medium",
-        approvalStatus: "pending",
-        registeredAt: "2026-10-17T08:10:00Z",
-        adherence: "78%",
-        streak: "3-Day Streak",
-        bp: "130 / 84 mmHg",
-        bpCat: "AHA Category: Pre-hypertension",
-        glucose: "115 mg/dL",
-        pulse: "76 BPM",
-        caregiverName: "Kevin Chen (Husband)",
-        caregiverPhone: "+1 (555) 234-8890",
-        medications: [
-          { id: "m-401", name: "Hydrochlorothiazide", dosage: "25mg", form: "Tablet", times: "08:00", stock: 30, instructions: "Take with breakfast" }
-        ]
-      }
-    ];
+    // Clean Slate: No static dummy patients
+    const INITIAL_PATIENTS = [];
 
-    // Clean Slate by Default: Load real clinician roster from LocalStorage, default to empty array
+    // Enforce Zero Static Data: load real clinician roster from LocalStorage, purge any legacy dummy data
     let patients = [];
     try {
       const stored = localStorage.getItem('pill_guardian_web_patients_v2');
-      patients = stored ? JSON.parse(stored) : [];
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const hasLegacy = Array.isArray(parsed) && parsed.some(p => p.id === 'pat-1' || p.name === 'Arthur Bennett' || p.name === 'Eleanor Vance' || p.name === 'Marcus Davis');
+        if (hasLegacy) {
+          localStorage.removeItem('pill_guardian_web_patients_v2');
+          patients = [];
+        } else {
+          patients = Array.isArray(parsed) ? parsed : [];
+        }
+      } else {
+        patients = [];
+      }
     } catch {
       patients = [];
     }
@@ -841,32 +966,23 @@
     }
 
     function resetToCleanSlate() {
-      if (confirm("Wipe all sample dummy data and start fresh? You can then enroll real patients and set their doses.")) {
+      if (confirm("Reset clinical workspace to clean slate? All local patient records will be cleared.")) {
         patients = [];
         currentPatientIndex = 0;
         localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify([]));
         localStorage.setItem('pill_guardian_fresh_reset', 'true');
         renderSidebar();
         renderPatientDetails();
-        showToast("Clean slate activated. All sample data cleared. Tap '+ Enroll' to add your real patients.");
+        showToast("Clean slate active. Tap '+ Enroll Patient' to onboard a patient.");
       }
-    }
-
-    function restoreSampleData() {
-      patients = JSON.parse(JSON.stringify(INITIAL_PATIENTS));
-      currentPatientIndex = 0;
-      localStorage.setItem('pill_guardian_web_patients_v2', JSON.stringify(patients));
-      localStorage.removeItem('pill_guardian_fresh_reset');
-      renderSidebar();
-      renderPatientDetails();
-      showToast("Demo cohort restored with sample patients.");
     }
 
     function sendQuickDoseReminder() {
       const p = patients[currentPatientIndex];
       if (!p) return;
       const firstMed = (p.medications && p.medications[0]) ? `${p.medications[0].name} (${p.medications[0].dosage})` : 'scheduled medication';
-      const msg = prompt(`Enter dose reminder message to push to ${p.name}'s phone:`, `Reminder from Dr. Henderson: Time to take your ${firstMed} now with a glass of water.`);
+      const doctorTitle = currentDoctor ? currentDoctor.name : 'your physician';
+      const msg = prompt(`Enter dose reminder message to push to ${p.name}'s phone:`, `Reminder from ${doctorTitle}: Time to take your ${firstMed} now with a glass of water.`);
       if (msg) {
         p.lastReminderSent = new Date().toISOString();
         savePatients();
@@ -935,6 +1051,18 @@
       const q = document.getElementById('searchPatient').value.toLowerCase();
       list.innerHTML = '';
 
+      if (patients.length === 0) {
+        list.innerHTML = `
+          <div style="padding:28px 16px; text-align:center; color:var(--muted);">
+            <div style="font-size:26px; margin-bottom:8px;">👥</div>
+            <strong style="font-size:13px; color:#475569; display:block;">No Patients Enrolled</strong>
+            <p style="font-size:11px; margin-top:4px; line-height:1.4;">Cohort is clear. Tap <strong>+ Enroll Patient</strong> to add your patients.</p>
+          </div>
+        `;
+        renderPendingAlerts();
+        return;
+      }
+
       patients.forEach((p, idx) => {
         const matchesSearch = p.name.toLowerCase().includes(q) ||
           p.conditions.some(c => c.toLowerCase().includes(q)) ||
@@ -969,9 +1097,9 @@
           </div>
           <div class="patient-meta">${p.email || ''} • Age ${p.age} • ${p.conditions[0] || 'Care Monitoring'}</div>
           <div class="patient-sub-stats">
-            <span>BP: ${p.bp ? p.bp.split(' ')[0] : '120/80'}</span>
+            <span>BP: ${p.bp ? p.bp.split(' ')[0] : '—'}</span>
             <span>• ${p.adherence || '100%'} Adherence</span>
-            <span>• Doses: ${p.dosesTaken || 14}/${(p.dosesTaken || 14) + (p.dosesMissed || 0)}</span>
+            <span>• Doses: ${p.dosesTaken || 0}/${(p.dosesTaken || 0) + (p.dosesMissed || 0)}</span>
           </div>
         `;
         list.appendChild(div);
@@ -1008,10 +1136,11 @@
       const p = patients.find(item => item.id === patId);
       if (!p) return;
 
+      const doctorName = currentDoctor ? currentDoctor.name : 'Attending Physician';
       p.approvalStatus = status;
       if (status === 'approved') {
         p.approvedAt = new Date().toISOString();
-        p.approvedBy = 'Dr. Robert Henderson, M.D.';
+        p.approvedBy = doctorName;
       }
       savePatients();
       renderSidebar();
@@ -1026,7 +1155,7 @@
           name: p.name,
           email: p.email,
           approval_status: status,
-          approved_by: 'Dr. Robert Henderson, M.D.',
+          approved_by: doctorName,
           updated_at: new Date().toISOString()
         }).then(res => {
           console.log('✓ Patient status synced to Supabase:', res);
@@ -1037,11 +1166,12 @@
     }
 
     function approveAllPending() {
+      const doctorName = currentDoctor ? currentDoctor.name : 'Attending Physician';
       patients.forEach(p => {
         if (p.approvalStatus === 'pending') {
           p.approvalStatus = 'approved';
           p.approvedAt = new Date().toISOString();
-          p.approvedBy = 'Dr. Robert Henderson, M.D.';
+          p.approvedBy = doctorName;
         }
       });
       savePatients();
@@ -1056,28 +1186,58 @@
 
       if (!p || patients.length === 0) {
         document.getElementById('profName').innerText = 'No Patients Enrolled';
-        document.getElementById('profMeta').innerText = 'Cohort is clear. Tap "+ Enroll" to onboard real patients and specify their medication doses.';
+        document.getElementById('profMeta').innerText = 'Cohort is clear. Tap "+ Enroll Patient" to onboard real patients and specify their medication doses.';
         document.getElementById('profBio').innerText = '';
         document.getElementById('profApprovalCard').innerHTML = '<div style="font-size:12px; color:var(--muted); text-align:center; padding:10px;">Clean slate ready for new clinical enrollments.</div>';
         if (behCard) behCard.style.display = 'none';
-        document.getElementById('profConditions').innerHTML = '';
-        document.getElementById('profAllergies').innerHTML = '';
-        document.getElementById('kpiAdherence').innerText = '0%';
-        document.getElementById('kpiStreak').innerText = 'No Patients';
+        document.getElementById('profConditions').innerHTML = '<span style="font-size:12px; color:var(--muted);">None listed</span>';
+        document.getElementById('profAllergies').innerHTML = '<span style="font-size:12px; color:var(--muted);">None reported</span>';
+        document.getElementById('kpiPatients').innerText = '0';
+        document.getElementById('kpiPendingCount').innerText = '0';
+        document.getElementById('kpiAdherence').innerText = '—';
+        document.getElementById('kpiStreak').innerText = 'No Patients Enrolled';
         document.getElementById('kpiMedCount').innerText = '0 Meds';
-        document.getElementById('medTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">No active prescriptions. Tap "+ Prescribe New Medication" to add doses.</td></tr>';
+        document.getElementById('kpiMedSub').innerText = 'No Active Prescriptions';
+        document.getElementById('activePrescriptionCount').innerText = '(0 Active)';
+        document.getElementById('valBP').innerText = '—';
+        document.getElementById('valBPCat').innerText = 'Awaiting patient vitals sync';
+        document.getElementById('valGlucose').innerText = '—';
+        document.getElementById('valPulse').innerText = '—';
+        document.getElementById('valWeight').innerText = '—';
+        document.getElementById('valBMI').innerText = '—';
+        document.getElementById('profCaregiverName').innerText = 'No caregiver assigned';
+        document.getElementById('profCaregiverPhone').innerText = '—';
+        const alertBox = document.getElementById('interactionAlertBox');
+        if (alertBox) alertBox.style.display = 'none';
+        const rpmStatus = document.getElementById('rpmStatusBadge');
+        if (rpmStatus) {
+          rpmStatus.className = 'badge';
+          rpmStatus.style.background = '#f1f5f9';
+          rpmStatus.style.color = 'var(--muted)';
+          rpmStatus.innerText = 'PENDING ENROLLMENT';
+        }
+        const rpm453 = document.getElementById('rpmCpt99453');
+        const rpm454 = document.getElementById('rpmCpt99454');
+        const rpm457 = document.getElementById('rpmCpt99457');
+        const rpmRev = document.getElementById('rpmRevenue');
+        if (rpm453) rpm453.innerHTML = '<span style="color:var(--muted);">Awaiting Enrollment</span>';
+        if (rpm454) rpm454.innerHTML = '<span style="color:var(--muted);">0 / 30 Days Logged</span>';
+        if (rpm457) rpm457.innerHTML = '<span style="color:var(--muted);">0 / 20 Mins Logged</span>';
+        if (rpmRev) rpmRev.innerText = '$0.00 / patient / mo';
+        document.getElementById('medTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted);"><div style="font-size:24px; margin-bottom:6px;">💊</div><strong>No active prescriptions</strong><div style="font-size:11px; margin-top:4px;">Tap "+ Prescribe New Medication" to add doses and schedules.</div></td></tr>';
         return;
       }
 
       if (behCard) behCard.style.display = 'block';
 
       document.getElementById('profName').innerText = p.name;
-      document.getElementById('profMeta').innerHTML = `DOB: ${p.dob} (Age ${p.age}) • Gender: ${p.gender} • Blood Type: <strong>${p.bloodType}</strong>`;
-      document.getElementById('profBio').innerText = `Height: ${p.height} • Weight: ${p.weight} • Email: ${p.email || 'N/A'}`;
+      document.getElementById('profMeta').innerHTML = `DOB: ${p.dob || 'N/A'} (Age ${p.age || '—'}) • Gender: ${p.gender || '—'} • Blood Type: <strong>${p.bloodType || '—'}</strong>`;
+      document.getElementById('profBio').innerText = `Height: ${p.height || '—'} • Weight: ${p.weight || '—'} • Email: ${p.email || 'N/A'}`;
 
       // Authorization Widget
       const authBox = document.getElementById('profApprovalCard');
       const isApproved = p.approvalStatus === 'approved';
+      const doctorTitle = p.approvedBy || (currentDoctor ? currentDoctor.name : 'Attending Physician');
       authBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <strong style="font-size:12px; display:flex; align-items:center; gap:6px;">
@@ -1086,7 +1246,7 @@
           <span class="badge ${isApproved ? 'badge-approved' : 'badge-pending'}">${p.approvalStatus ? p.approvalStatus.toUpperCase() : 'APPROVED'}</span>
         </div>
         <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">
-          ${isApproved ? `Authorized by ${p.approvedBy || 'Dr. Robert Henderson'} • Patient companion sync active` : 'Account registered. Medication dosing, schedule & vitals remain locked on phone until verified.'}
+          ${isApproved ? `Authorized by ${doctorTitle} • Patient companion sync active` : 'Account registered. Medication dosing, schedule & vitals remain locked on phone until verified.'}
         </div>
         ${isApproved ?
           `<button class="btn btn-danger btn-sm" style="width:100%; justify-content:center;" onclick="updatePatientApproval('${p.id}', 'pending')">Revoke / Suspend App Access</button>` :
@@ -1105,36 +1265,36 @@
       const statAdh = document.getElementById('profStatAdherence');
       if (statAdh) statAdh.innerText = `${adhVal}%`;
       const statTaken = document.getElementById('profStatTaken');
-      if (statTaken) statTaken.innerText = p.dosesTaken !== undefined ? p.dosesTaken : 18;
+      if (statTaken) statTaken.innerText = p.dosesTaken !== undefined ? p.dosesTaken : 0;
       const statMissed = document.getElementById('profStatMissed');
       if (statMissed) statMissed.innerText = p.dosesMissed !== undefined ? p.dosesMissed : 0;
 
       // Conditions
       const condContainer = document.getElementById('profConditions');
-      condContainer.innerHTML = (p.conditions || []).map(c => `<span class="tag-condition">${c}</span>`).join('');
+      condContainer.innerHTML = (p.conditions && p.conditions.length > 0) ?
+        p.conditions.map(c => `<span class="tag-condition">${c}</span>`).join('') :
+        '<span style="font-size:12px; color:var(--muted);">None listed</span>';
 
       // Allergies
       const allgContainer = document.getElementById('profAllergies');
-      allgContainer.innerHTML = (p.allergies || []).map(a => `<span class="tag-allergy">⚠️ ${a}</span>`).join('');
+      allgContainer.innerHTML = (p.allergies && p.allergies.length > 0) ?
+        p.allergies.map(a => `<span class="tag-allergy">⚠️ ${a}</span>`).join('') :
+        '<span style="font-size:12px; color:var(--muted);">No known drug allergies reported</span>';
 
       // Caregiver
-      document.getElementById('profCaregiverName').innerText = p.caregiverName || 'Designated Proxy';
-      document.getElementById('profCaregiverPhone').innerText = `📞 ${p.caregiverPhone || 'N/A'}`;
+      document.getElementById('profCaregiverName').innerText = p.caregiverName || 'No caregiver assigned';
+      document.getElementById('profCaregiverPhone').innerText = p.caregiverPhone ? `📞 ${p.caregiverPhone}` : '—';
 
       // KPIs & Vitals
       document.getElementById('kpiAdherence').innerText = p.adherence || '100%';
       document.getElementById('kpiStreak').innerText = p.streak || 'Active Care';
       document.getElementById('kpiMedCount').innerText = `${(p.medications || []).length} Meds`;
-      document.getElementById('valBP').innerText = p.bp || '120 / 80 mmHg';
-      document.getElementById('valBPCat').innerText = p.bpCat || 'AHA Category: Normal';
-      document.getElementById('valGlucose').innerText = p.glucose || '95 mg/dL';
-      document.getElementById('valPulse').innerText = p.pulse || '72 BPM';
-      document.getElementById('valWeight').innerText = (p.weight || '70 kg').split(' ')[0] + ' kg';
-      document.getElementById('valBMI').innerText = p.bmi || 'BMI 24.2';
-
-      // Drug Interaction box toggle
-      const alertBox = document.getElementById('interactionAlertBox');
-      alertBox.style.display = p.id === 'pat-1' ? 'block' : 'none';
+      document.getElementById('valBP').innerText = p.bp || '—';
+      document.getElementById('valBPCat').innerText = p.bpCat || 'Awaiting patient vitals sync';
+      document.getElementById('valGlucose').innerText = p.glucose || '—';
+      document.getElementById('valPulse').innerText = p.pulse || '—';
+      document.getElementById('valWeight').innerText = p.weight ? p.weight.split(' ')[0] + ' kg' : '—';
+      document.getElementById('valBMI').innerText = p.bmi || '—';
 
       // Prescriptions Table
       const tbody = document.getElementById('medTableBody');
@@ -1143,7 +1303,7 @@
       document.getElementById('activePrescriptionCount').innerText = `(${medList.length} Active)`;
 
       if (medList.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--muted);">No medications prescribed yet. Tap "+ Prescribe New Medication" to add a dose.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--muted);">No medications prescribed yet. Tap "+ Prescribe New Medication" to add a dose.</td></tr>';
       } else {
         medList.forEach(m => {
           const stockStyle = m.stock <= 7 ? 'color:#b91c1c; font-weight:800;' : 'font-weight:700;';
@@ -1232,24 +1392,24 @@
         bloodType,
         height,
         weight,
-        bmi: "BMI 24.2 (Normal)",
-        conditions: conditions.length > 0 ? conditions : ["Essential Hypertension"],
-        allergies: allergies.length > 0 ? allergies : ["No Known Drug Allergies (NKDA)"],
+        bmi: "—",
+        conditions: conditions.length > 0 ? conditions : [],
+        allergies: allergies.length > 0 ? allergies : [],
         riskLevel,
         approvalStatus: preApprove ? 'approved' : 'pending',
         approvedAt: preApprove ? new Date().toISOString() : undefined,
-        approvedBy: preApprove ? 'Dr. Robert Henderson, M.D.' : undefined,
+        approvedBy: preApprove ? (currentDoctor ? currentDoctor.name : 'Attending Physician') : undefined,
         registeredAt: new Date().toISOString(),
         adherence: "100%",
         dosesTaken: 0,
         dosesMissed: 0,
         streak: "New Patient (Active)",
-        bp: "120 / 80 mmHg",
-        bpCat: "AHA Category: Normal",
-        glucose: "98 mg/dL",
-        pulse: "72 BPM",
-        caregiverName,
-        caregiverPhone,
+        bp: "—",
+        bpCat: "Awaiting patient vitals sync",
+        glucose: "—",
+        pulse: "—",
+        caregiverName: caregiverName || "No caregiver assigned",
+        caregiverPhone: caregiverPhone || "—",
         medications: initialMeds
       };
 
@@ -1336,7 +1496,7 @@
           times: [newMed.times],
           stock_current: newMed.stock,
           stock_refill_alert: 7,
-          prescribed_by: 'Dr. Robert Henderson, M.D.',
+          prescribed_by: currentDoctor ? currentDoctor.name : 'Attending Physician',
           is_active: true,
           created_at: new Date().toISOString()
         }).then(res => {
@@ -1453,23 +1613,77 @@
       const ssoBadge = document.getElementById('ssoBadgeText');
 
       if (avatarElem) avatarElem.innerText = currentDoctor.avatar || 'MD';
-      if (nameElem) nameElem.innerText = currentDoctor.name || 'Dr. Robert Henderson, M.D.';
-      if (deptElem) deptElem.innerText = `${currentDoctor.specialty || 'Attending Physician'} • ${currentDoctor.hospital || 'Metropolitan Hospital RPM'} • NPI #${currentDoctor.npi || '1982736410'}`;
-      if (ssoBadge) ssoBadge.innerText = currentDoctor.authMethod === 'google' ? 'Google Clinician SSO Active' : 'Verified MD Session Active';
+      if (nameElem) nameElem.innerText = currentDoctor.name || 'Attending Physician';
+      if (deptElem) deptElem.innerText = `${currentDoctor.specialty || 'Attending Physician'} • ${currentDoctor.hospital || 'Hospital RPM'}`;
+      if (ssoBadge) ssoBadge.innerText = currentDoctor.authMethod === 'google' ? `Google SSO Active: ${currentDoctor.email}` : `Clinical ID: ${currentDoctor.email}`;
     }
 
-    function handleGoogleDoctorLogin() {
-      const mockGoogleDoctor = {
-        name: 'Dr. Robert Henderson, M.D.',
-        email: 'dr.robert.henderson@metropolitan.org',
-        specialty: 'Attending Cardiologist',
+    function submitGoogleLoginForm(e) {
+      if (e) e.preventDefault();
+      const email = document.getElementById('gEmail').value.trim();
+      const password = document.getElementById('gPassword').value.trim();
+      let name = document.getElementById('gDocName').value.trim();
+      let specialty = document.getElementById('gSpecialty').value.trim();
+
+      if (!email) {
+        alert('Please enter your Google account email.');
+        return;
+      }
+
+      if (!name) {
+        const userPart = email.split('@')[0].replace(/[._-]/g, ' ');
+        const cap = userPart.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        name = `Dr. ${cap}, M.D.`;
+      }
+      if (!specialty) {
+        specialty = 'Attending Physician & RPM';
+      }
+
+      const initials = name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MD';
+
+      const doctorProfile = {
+        name,
+        email,
+        specialty,
         hospital: 'Metropolitan General Hospital RPM',
         npi: '1982736410',
-        avatar: 'RH',
+        avatar: initials,
         authMethod: 'google',
         loginTime: new Date().toISOString()
       };
-      loginDoctorSession(mockGoogleDoctor, '✓ Authenticated with Google Clinician SSO. Welcome back, Dr. Henderson.');
+
+      loginDoctorSession(doctorProfile, `✓ Authenticated with Google as ${name}. Welcome to PillGuardian MD.`);
+    }
+
+    function selectGoogleAccount(email, name, specialty) {
+      document.getElementById('gEmail').value = email;
+      document.getElementById('gDocName').value = name;
+      document.getElementById('gSpecialty').value = specialty;
+
+      const initials = name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'MD';
+      const doctorProfile = {
+        name,
+        email,
+        specialty,
+        hospital: 'Metropolitan General Hospital RPM',
+        npi: '1982736410',
+        avatar: initials,
+        authMethod: 'google',
+        loginTime: new Date().toISOString()
+      };
+      loginDoctorSession(doctorProfile, `✓ Signed in with Google as ${name}. Clinical Workstation unlocked.`);
+    }
+
+    function toggleHospitalNpiForm() {
+      const section = document.getElementById('hospitalNpiFormSection');
+      const gForm = document.getElementById('googleLoginForm');
+      if (section.style.display === 'none' || !section.style.display) {
+        section.style.display = 'block';
+        gForm.style.display = 'none';
+      } else {
+        section.style.display = 'none';
+        gForm.style.display = 'block';
+      }
     }
 
     function handleEmailDoctorLogin(e) {
@@ -1491,16 +1705,6 @@
         loginTime: new Date().toISOString()
       };
       loginDoctorSession(doctorProfile, `✓ Authorized session for ${name} (NPI #${npi}).`);
-    }
-
-    function fillTestDoctor(type) {
-      if (type === 'patel') {
-        document.getElementById('loginDocEmail').value = 'dr.anita.patel@metropolitan.org';
-        document.getElementById('loginDocNPI').value = '1728394015';
-      } else {
-        document.getElementById('loginDocEmail').value = 'dr.robert.henderson@metropolitan.org';
-        document.getElementById('loginDocNPI').value = '1982736410';
-      }
     }
 
     function loginDoctorSession(doctorObj, toastMsg) {
